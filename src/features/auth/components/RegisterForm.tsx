@@ -5,8 +5,9 @@ import { register } from '../api/register'
 export const RegisterForm = () => {
   const navigate = useNavigate()
 
-  const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
+  const [fullname, setFullname] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -18,7 +19,8 @@ export const RegisterForm = () => {
 
     try {
       await register({
-        name,
+        fullname,
+        username,
         email,
         password,
       })
@@ -37,12 +39,22 @@ export const RegisterForm = () => {
 
       <form className="mt-5" onSubmit={handleSubmit}>
         <input
-          id="name"
+          id="username"
           type="text"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
           className="mt-[15px] w-full rounded-[20px] border-x-2 border-x-transparent bg-white px-5 py-[15px] text-sm text-slate-800 shadow-[0px_10px_10px_-5px_rgba(15,23,42,0.08)] outline-none placeholder:text-slate-400 focus:border-x-slate-400"
           placeholder="Username"
+          required
+        />
+
+        <input
+          id="fullname"
+          type="text"
+          value={fullname}
+          onChange={(event) => setFullname(event.target.value)}
+          className="mt-[15px] w-full rounded-[20px] border-x-2 border-x-transparent bg-white px-5 py-[15px] text-sm text-slate-800 shadow-[0px_10px_10px_-5px_rgba(15,23,42,0.08)] outline-none placeholder:text-slate-400 focus:border-x-slate-400"
+          placeholder="Full Name"
           required
         />
 

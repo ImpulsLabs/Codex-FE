@@ -14,17 +14,8 @@ export const LoginForm = () => {
   const [success, setSuccess] = useState<string | null>(null)
 
   const buildLoginPayload = (): LoginPayload => {
-    const value = loginValue.trim()
-
-    if (value.includes('@')) {
-      return {
-        email: value,
-        password,
-      }
-    }
-
     return {
-      username: value,
+      user: loginValue.trim(),
       password,
     }
   }

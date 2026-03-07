@@ -1,9 +1,42 @@
 import { useState } from 'react'
+import { isAxiosError } from 'axios'
 import { Link, useNavigate } from 'react-router-dom'
 import { register } from '../api/register'
+import { login } from '../api/login'
+import { useAuthStore } from '../../../stores/authStore'
+
+type ApiErrorPayload = {
+  message?: string
+  errors?: Record<string, string[]>
+}
+
+const resolveErrorMessage = (error: unknown) => {
+  if (isAxiosError<ApiErrorPayload>(error)) {
+    const responseData = error.response?.data
+
+    if (responseData?.errors) {
+      const firstError = Object.values(responseData.errors)[0]?.[0]
+
+      if (firstError) {
+        return firstError
+      }
+    }
+
+    if (responseData?.message) {
+      return responseData.message
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return 'Register gagal!'
+}
 
 export const RegisterForm = () => {
   const navigate = useNavigate()
+  const setAuth = useAuthStore((state) => state.setAuth)
 
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -11,11 +44,13 @@ export const RegisterForm = () => {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setLoading(true)
     setError(null)
+    setSuccess(null)
 
     try {
       await register({
@@ -25,9 +60,29 @@ export const RegisterForm = () => {
         password,
       })
 
-      navigate('/login')
-    } catch {
-      setError('Register gagal!')
+      let authResponse
+
+      try {
+        authResponse = await login({
+          user: username.trim(),
+          password,
+        })
+      } catch (usernameLoginError) {
+        if (username.trim().toLowerCase() === email.trim().toLowerCase()) {
+          throw usernameLoginError
+        }
+
+        authResponse = await login({
+          user: email.trim(),
+          password,
+        })
+      }
+
+      setAuth(authResponse.token, authResponse.user)
+      setSuccess('Register berhasil! Mengarahkan ke dashboard...')
+      navigate('/dashboard', { replace: true })
+    } catch (error) {
+      setError(resolveErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -78,7 +133,8 @@ export const RegisterForm = () => {
           required
         />
 
-        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+          {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+          {success ? <p className="mt-3 text-sm text-emerald-600">{success}</p> : null}
 
         <button
           type="submit"

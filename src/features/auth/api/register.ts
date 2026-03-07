@@ -1,7 +1,22 @@
 import api from '../../../lib/axios'
-import type { AuthResponse, RegisterPayload } from '../types'
+import type { RegisterPayload } from '../types'
 
-export const register = async (payload: RegisterPayload): Promise<AuthResponse> => {
-  const { data } = await api.post<AuthResponse>('/v1/auth/register', payload)
+const buildRegisterFormData = (payload: RegisterPayload) => {
+  const formData = new FormData()
+  formData.append('fullname', payload.fullname)
+  formData.append('username', payload.username)
+  formData.append('email', payload.email)
+  formData.append('password', payload.password)
+  return formData
+}
+
+export const register = async (payload: RegisterPayload): Promise<unknown> => {
+  const formData = buildRegisterFormData(payload)
+  const { data } = await api.post('/v1/auth/register', formData, {
+    headers: {
+      Accept: 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  })
   return data
 }

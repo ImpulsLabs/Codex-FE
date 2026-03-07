@@ -3,6 +3,9 @@ import type { ReactNode } from 'react'
 import LoginPage from '../pages/auth/LoginPage'
 import RegisterPage from '../pages/auth/RegisterPage'
 import DashboardPage from '../pages/dashboard/DashboardPage'
+import PostsPage from '../pages/posts/PostsPage'
+import CategoriesPage from '../pages/categories/CategoriesPage'
+import CommentsPage from '../pages/comments/CommentsPage'
 import { useAuthStore } from '../stores/authStore'
 
 const PublicOnlyRoute = ({ children }: { children: ReactNode }) => {
@@ -51,6 +54,30 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <DashboardPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/posts',
+    element: (
+      <ProtectedRoute>
+        <PostsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/categories',
+    element: (
+      <ProtectedRoute>
+        <CategoriesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/comments',
+    element: (
+      <ProtectedRoute>
+        <CommentsPage />
       </ProtectedRoute>
     ),
   },

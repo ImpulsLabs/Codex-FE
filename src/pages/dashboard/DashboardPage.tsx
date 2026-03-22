@@ -1,8 +1,11 @@
-import { useMemo, useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
+import type { QuickActionItem, StatItem } from './types'
+import StatCard from './components/StatCard'
+import QuickActionCard from './components/QuickActionCard'
+import { AppShell } from '../../layouts/AppShell'
 
-// Icons - stroke width konsisten, minimalis
 const Icons = {
   Post: () => (
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -40,9 +43,9 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   ),
-  ArrowRight: () => (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+  Analytics: () => (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18M7.5 15l3-3 2.5 2.5 4.5-5" />
     </svg>
   )
 }
@@ -56,15 +59,6 @@ const formatDisplayName = (fullname?: string, username?: string, email?: string)
 
 const DashboardPage = () => {
   const user = useAuthStore((state) => state.user)
-  const clearAuth = useAuthStore((state) => state.clearAuth)
-  const location = useLocation()
-  const [isScrolled, setIsScrolled] = useState(false)
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10)
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
 
   const displayName = useMemo(() => {
     return formatDisplayName(user?.fullname ?? user?.name, user?.username, user?.email)
@@ -80,62 +74,23 @@ const DashboardPage = () => {
     return `${words[0][0] ?? ''}${words[1][0] ?? ''}`.toUpperCase()
   }, [displayName])
 
-  const navItems = [
-    { label: 'Dashboard', path: '/dashboard' },
-    { label: 'Posts', path: '/posts' },
-    { label: 'Categories', path: '/categories' },
-    { label: 'Comments', path: '/comments' },
-  ]
-
-  const stats = [
+  const stats: StatItem[] = [
     { label: 'Published', value: '24', sub: '+3 minggu ini' },
     { label: 'Drafts', value: '7', sub: 'Active' },
     { label: 'Pending', value: '12', sub: 'Comments' },
+    { label: 'Scheduled', value: '5', sub: 'Next 7 days' },
   ]
 
-  const quickActions = [
+  const quickActions: QuickActionItem[] = [
     { label: 'Kelola Post', path: '/posts', icon: Icons.Post },
     { label: 'Atur Kategori', path: '/categories', icon: Icons.Category },
     { label: 'Moderasi', path: '/comments', icon: Icons.Comment },
     { label: 'Users', path: '/users', icon: Icons.Users },
+    { label: 'Analytics', path: '/dashboard', icon: Icons.Analytics },
   ]
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 pb-12 pt-28 sm:px-6 sm:pt-32">
-      
-      {/* Navigation - Floating Pill */}
-      <header className={`fixed left-1/2 top-5 z-50 w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 transition-all duration-300 ${isScrolled ? 'top-3' : 'top-5'}`}>
-        <nav className="flex items-center justify-between rounded-[30px] border-[3px] border-white bg-white/90 px-2 py-2 shadow-[0px_20px_25px_-15px_rgba(15,23,42,0.15)] backdrop-blur-md">
-          <div className="flex items-center gap-1 px-1">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path
-              return (
-                <Link
-                  key={item.label}
-                  to={item.path}
-                  className={`rounded-[20px] px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
-                    isActive 
-                      ? 'bg-slate-800 text-white shadow-lg shadow-slate-800/20' 
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-          </div>
-          
-          <button
-            onClick={clearAuth}
-            className="mr-1 flex items-center gap-2 rounded-[20px] bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 hover:text-slate-900"
-          >
-            <Icons.Logout />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-        </nav>
-      </header>
-
-      <div className="mx-auto max-w-5xl space-y-6">
+    <AppShell>
         
         {/* Main Card Container - Consistent dengan Register Form */}
         <div className="rounded-[40px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-8 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:p-10">
@@ -145,7 +100,7 @@ const DashboardPage = () => {
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Dashboard</p>
               <h1 className="mt-2 text-3xl font-black text-slate-800">
-                Halo, {displayName}
+                Welcome Back!, {displayName}
               </h1>
               <p className="mt-1 text-sm text-slate-500">
                 Ringkasan aktivitas konten Anda
@@ -165,21 +120,9 @@ const DashboardPage = () => {
           </div>
 
           {/* Stats Grid - Minimalist Cards */}
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="group rounded-[24px] border-2 border-white bg-white p-6 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0px_20px_25px_-15px_rgba(15,23,42,0.15)]"
-              >
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
-                <p className="mt-2 text-4xl font-black text-slate-800">{stat.value}</p>
-                <p className="mt-1 text-sm font-medium text-slate-500">{stat.sub}</p>
-                
-                {/* Subtle Progress Line */}
-                <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                  <div className="h-full w-2/3 rounded-full bg-slate-300 transition-all duration-500 group-hover:bg-slate-400" />
-                </div>
-              </div>
+              <StatCard key={stat.label} item={stat} />
             ))}
           </div>
 
@@ -201,19 +144,7 @@ const DashboardPage = () => {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 {quickActions.map((item) => (
-                  <Link
-                    key={item.label}
-                    to={item.path}
-                    className="group flex items-center gap-4 rounded-[20px] border-2 border-white bg-slate-50/80 p-4 transition-all duration-200 hover:border-slate-200 hover:bg-white hover:shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.12)]"
-                  >
-                    <div className="rounded-[12px] bg-white p-2.5 text-slate-600 shadow-sm transition-colors group-hover:text-slate-800">
-                      <item.icon />
-                    </div>
-                    <span className="flex-1 font-semibold text-slate-700 group-hover:text-slate-900">
-                      {item.label}
-                    </span>
-                    <Icons.ArrowRight />
-                  </Link>
+                  <QuickActionCard key={item.label} item={item} />
                 ))}
               </div>
 
@@ -274,8 +205,7 @@ const DashboardPage = () => {
             </div>
           </div>
         </div>
-      </div>
-    </main>
+    </AppShell>
   )
 }
 

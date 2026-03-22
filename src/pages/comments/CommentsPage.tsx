@@ -1,6 +1,7 @@
-import { useMemo, useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
+import { AppShell } from '../../layouts/AppShell'
 
 const Icons = {
   Post: () => (
@@ -17,11 +18,6 @@ const Icons = {
   Comment: () => (
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z" />
-    </svg>
-  ),
-  Logout: () => (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
     </svg>
   ),
   Check: () => (
@@ -50,27 +46,11 @@ const comments = [
 ]
 
 const CommentsPage = () => {
-  const location = useLocation()
   const user = useAuthStore((state) => state.user)
-  const clearAuth = useAuthStore((state) => state.clearAuth)
-  const [isScrolled, setIsScrolled] = useState(false)
-
-  useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 10)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
   const displayName = useMemo(() => {
     return formatDisplayName(user?.fullname ?? user?.name, user?.username, user?.email)
   }, [user])
-
-  const navItems = [
-    { label: 'Dashboard', path: '/dashboard' },
-    { label: 'Posts', path: '/posts' },
-    { label: 'Categories', path: '/categories' },
-    { label: 'Comments', path: '/comments' },
-  ]
 
   const getStatusClasses = (status: string) => {
     if (status === 'Approved') return 'bg-emerald-100 text-emerald-700'
@@ -79,39 +59,7 @@ const CommentsPage = () => {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 pb-12 pt-28 sm:px-6 sm:pt-32">
-      <header className={`fixed left-1/2 top-5 z-50 w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 transition-all duration-300 ${isScrolled ? 'top-3' : 'top-5'}`}>
-        <nav className="flex items-center justify-between rounded-[30px] border-[3px] border-white bg-white/90 px-2 py-2 shadow-[0px_20px_25px_-15px_rgba(15,23,42,0.15)] backdrop-blur-md">
-          <div className="flex items-center gap-1 px-1">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path
-              return (
-                <Link
-                  key={item.label}
-                  to={item.path}
-                  className={`rounded-[20px] px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
-                    isActive
-                      ? 'bg-slate-800 text-white shadow-lg shadow-slate-800/20'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-          </div>
-          <button
-            type="button"
-            onClick={clearAuth}
-            className="mr-1 flex items-center gap-2 rounded-[20px] bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 hover:text-slate-900"
-          >
-            <Icons.Logout />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-        </nav>
-      </header>
-
-      <section className="mx-auto max-w-5xl space-y-6">
+    <AppShell>
         <div className="rounded-[40px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-8 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:p-10">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -194,8 +142,7 @@ const CommentsPage = () => {
             </Link>
           </div>
         </div>
-      </section>
-    </main>
+    </AppShell>
   )
 }
 

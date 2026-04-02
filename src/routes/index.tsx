@@ -6,6 +6,8 @@ import DashboardPage from '../pages/dashboard/DashboardPage'
 import PostsPage from '../pages/posts/PostsPage'
 import CategoriesPage from '../pages/categories/CategoriesPage'
 import CommentsPage from '../pages/comments/CommentsPage'
+import UsersPage from '../pages/users/UsersPage'
+import ProfilePage from '../pages/profile/ProfilePage'
 import { useAuthStore } from '../stores/authStore'
 
 const PublicOnlyRoute = ({ children }: { children: ReactNode }) => {
@@ -78,6 +80,22 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <CommentsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/users',
+    element: (
+      <ProtectedRoute>
+        <UsersPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/profile',
+    element: (
+      <ProtectedRoute>
+        <ProfilePage />
       </ProtectedRoute>
     ),
   },

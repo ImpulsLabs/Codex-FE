@@ -9,6 +9,8 @@ const MAIN_NAV_ITEMS = [
   { label: 'Posts', path: '/posts' },
   { label: 'Categories', path: '/categories' },
   { label: 'Comments', path: '/comments' },
+  { label: 'Users', path: '/users' },
+  { label: 'Profile', path: '/profile' },
 ]
 
 interface AppShellProps extends PropsWithChildren {

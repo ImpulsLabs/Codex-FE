@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { isAxiosError } from 'axios'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { AppShell } from '../../layouts/AppShell'
@@ -42,6 +43,10 @@ type UserItem = {
   username: string
   email: string
   role: string
+}
+
+type ApiErrorPayload = {
+  message?: string
 }
 
 const formatDisplayName = (fullname?: string, username?: string, email?: string) => {
@@ -108,8 +113,19 @@ const UsersPage = () => {
       try {
         const { data } = await api.get('/v1/users')
         setUsers(extractUsersArray(data).map(mapApiUser))
-      } catch {
-        setError('Gagal memuat data user dari server.')
+      } catch (requestError) {
+        if (isAxiosError<ApiErrorPayload>(requestError)) {
+          const status = requestError.response?.status
+          const apiMessage = requestError.response?.data?.message
+
+          if (status === 403) {
+            setError('Akun Anda tidak memiliki akses ke data users (403 Forbidden).')
+          } else {
+            setError(apiMessage ?? 'Gagal memuat data user dari server.')
+          }
+        } else {
+          setError('Gagal memuat data user dari server.')
+        }
       } finally {
         setIsLoading(false)
       }

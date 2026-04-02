@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { isAxiosError } from 'axios'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../../layouts/AppShell'
 import api from '../../lib/axios'
@@ -11,6 +12,11 @@ type ApiProfile = {
   username?: string
   email?: string
   role?: string
+}
+
+type ApiErrorPayload = {
+  message?: string
+  errors?: Record<string, string[]>
 }
 
 const formatDisplayName = (fullname?: string, username?: string, email?: string) => {
@@ -82,20 +88,8 @@ const ProfilePage = () => {
       setError(null)
 
       try {
-        const endpoints = ['/v1/profiles', '/v1/profiles/me']
-        let profile: ApiProfile | null = null
-
-        for (const endpoint of endpoints) {
-          try {
-            const { data } = await api.get(endpoint)
-            profile = extractProfile(data)
-            if (profile) {
-              break
-            }
-          } catch {
-            // Try next fallback endpoint.
-          }
-        }
+        const { data } = await api.get('/v1/profiles')
+        const profile = extractProfile(data)
 
         if (!profile) {
           hydrateFromStore()
@@ -123,9 +117,15 @@ const ProfilePage = () => {
             role: nextRole,
           })
         }
-      } catch {
+      } catch (requestError) {
         hydrateFromStore()
-        setError('Gagal memuat profil dari server.')
+
+        if (isAxiosError<ApiErrorPayload>(requestError)) {
+          const apiMessage = requestError.response?.data?.message
+          setError(apiMessage ?? 'Gagal memuat profil dari server.')
+        } else {
+          setError('Gagal memuat profil dari server.')
+        }
       } finally {
         setIsLoading(false)
       }
@@ -146,23 +146,18 @@ const ProfilePage = () => {
       email: email.trim(),
     }
 
+    const formData = new FormData()
+    formData.append('fullname', payload.fullname)
+    formData.append('username', payload.username)
+    formData.append('email', payload.email)
+
     try {
-      const endpoints = ['/v1/profiles/me', '/v1/profiles']
-      let saved = false
-
-      for (const endpoint of endpoints) {
-        try {
-          await api.put(endpoint, payload)
-          saved = true
-          break
-        } catch {
-          // Try next fallback endpoint.
-        }
-      }
-
-      if (!saved) {
-        throw new Error('Simpan profil gagal')
-      }
+      await api.put('/v1/profiles', formData, {
+        headers: {
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      })
 
       setUser({
         id: authUser?.id ?? 'me',
@@ -173,8 +168,22 @@ const ProfilePage = () => {
       })
 
       setSuccess('Profil berhasil diperbarui.')
-    } catch {
-      setError('Gagal menyimpan profil. Cek endpoint update profile pada backend.')
+    } catch (requestError) {
+      if (isAxiosError<ApiErrorPayload>(requestError)) {
+        const firstValidationError = requestError.response?.data?.errors
+          ? Object.values(requestError.response.data.errors)[0]?.[0]
+          : undefined
+
+        const apiMessage = firstValidationError ?? requestError.response?.data?.message
+
+        if (apiMessage?.toLowerCase().includes('email has already been taken')) {
+          setError('Backend menolak update karena validasi email duplikat. Rule update email di backend perlu disesuaikan (ignore user saat ini).')
+        } else {
+          setError(apiMessage ?? 'Gagal menyimpan profil.')
+        }
+      } else {
+        setError('Gagal menyimpan profil. Cek endpoint update profile pada backend.')
+      }
     } finally {
       setIsSaving(false)
     }

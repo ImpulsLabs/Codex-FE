@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { AppShell } from '../../layouts/AppShell'
+import api from '../../lib/axios'
 
 const Icons = {
   Category: () => (
@@ -34,19 +35,98 @@ const formatDisplayName = (fullname?: string, username?: string, email?: string)
   return 'Pengguna'
 }
 
-const categories = [
-  { id: 'CAT-01', name: 'Marketing', slug: 'marketing', totalPosts: 12, growth: '+2 minggu ini' },
-  { id: 'CAT-02', name: 'SEO', slug: 'seo', totalPosts: 9, growth: '+1 minggu ini' },
-  { id: 'CAT-03', name: 'Editorial', slug: 'editorial', totalPosts: 6, growth: 'Stabil' },
-  { id: 'CAT-04', name: 'Content Strategy', slug: 'content-strategy', totalPosts: 4, growth: '+1 minggu ini' },
-]
+type ApiCategory = {
+  id?: string | number
+  name?: string
+  slug?: string
+  total_posts?: number | string
+  posts_count?: number | string
+}
+
+type CategoryItem = {
+  id: string
+  name: string
+  slug: string
+  totalPosts: number
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null
+}
+
+const extractCategoryArray = (payload: unknown): ApiCategory[] => {
+  if (Array.isArray(payload)) {
+    return payload.filter(isRecord) as ApiCategory[]
+  }
+
+  if (!isRecord(payload)) {
+    return []
+  }
+
+  const directData = payload.data
+
+  if (Array.isArray(directData)) {
+    return directData.filter(isRecord) as ApiCategory[]
+  }
+
+  if (isRecord(directData) && Array.isArray(directData.data)) {
+    return directData.data.filter(isRecord) as ApiCategory[]
+  }
+
+  return []
+}
+
+const mapApiCategory = (category: ApiCategory): CategoryItem => {
+  const totalPosts = Number(category.total_posts ?? category.posts_count ?? 0)
+
+  return {
+    id: String(category.id ?? '-'),
+    name: (category.name ?? 'Untitled Category').trim() || 'Untitled Category',
+    slug: (category.slug ?? '').trim(),
+    totalPosts: Number.isFinite(totalPosts) ? totalPosts : 0,
+  }
+}
 
 const CategoriesPage = () => {
   const user = useAuthStore((state) => state.user)
+  const [categories, setCategories] = useState<CategoryItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const displayName = useMemo(() => {
     return formatDisplayName(user?.fullname ?? user?.name, user?.username, user?.email)
   }, [user])
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const { data } = await api.get('/v1/categories')
+        setCategories(extractCategoryArray(data).map(mapApiCategory))
+      } catch {
+        setError('Gagal memuat data kategori dari server.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    void loadCategories()
+  }, [])
+
+  const largestGroup = useMemo(() => {
+    if (!categories.length) {
+      return '-'
+    }
+
+    const sorted = [...categories].sort((a, b) => b.totalPosts - a.totalPosts)
+    return sorted[0].name
+  }, [categories])
+
+  const totalPostsInCategories = useMemo(() => {
+    return categories.reduce((sum, item) => sum + item.totalPosts, 0)
+  }, [categories])
 
   return (
     <AppShell>
@@ -70,11 +150,11 @@ const CategoriesPage = () => {
             </article>
             <article className="rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Largest Group</p>
-              <p className="mt-2 text-2xl font-black text-slate-800">Marketing</p>
+              <p className="mt-2 text-2xl font-black text-slate-800">{largestGroup}</p>
             </article>
             <article className="rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Momentum</p>
-              <p className="mt-2 text-2xl font-black text-emerald-600">+4 post</p>
+              <p className="mt-2 text-2xl font-black text-emerald-600">{totalPostsInCategories} post</p>
             </article>
           </div>
 
@@ -91,7 +171,18 @@ const CategoriesPage = () => {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {categories.map((item) => (
+              {isLoading ? (
+                <p className="text-sm text-slate-500">Memuat kategori...</p>
+              ) : null}
+
+              {!isLoading && error ? <p className="text-sm font-semibold text-rose-600">{error}</p> : null}
+
+              {!isLoading && !error && categories.length === 0 ? (
+                <p className="text-sm text-slate-500">Belum ada kategori.</p>
+              ) : null}
+
+              {!isLoading && !error
+                ? categories.map((item) => (
                 <article
                   key={item.id}
                   className="rounded-[20px] border-2 border-white bg-slate-50 p-4 transition-all duration-200 hover:bg-white hover:shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.12)]"
@@ -110,10 +201,11 @@ const CategoriesPage = () => {
                   </div>
                   <div className="mt-4 flex items-center justify-between text-sm">
                     <span className="font-semibold text-slate-600">{item.totalPosts} posts</span>
-                    <span className="font-semibold text-emerald-600">{item.growth}</span>
+                    <span className="font-semibold text-emerald-600">Aktif</span>
                   </div>
                 </article>
-              ))}
+                  ))
+                : null}
             </div>
           </div>
 

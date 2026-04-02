@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { AppShell } from '../../layouts/AppShell'
+import api from '../../lib/axios'
 
 const Icons = {
   Post: () => (
@@ -39,18 +40,123 @@ const formatDisplayName = (fullname?: string, username?: string, email?: string)
   return 'Pengguna'
 }
 
-const comments = [
-  { id: 'COM-991', author: 'Raka', post: 'Meningkatkan CTR dengan Headline yang Tajam', message: 'Insightful banget, langsung bisa dipakai.', status: 'Approved' },
-  { id: 'COM-992', author: 'Nia', post: 'Checklist SEO Teknis untuk Website Baru', message: 'Tolong tambahin bagian schema markup ya.', status: 'Pending' },
-  { id: 'COM-993', author: 'Anon', post: 'Panduan Menulis Article Pillar yang Evergreen', message: 'Visit cheap-link.ru now!', status: 'Spam' },
-]
+type ApiComment = {
+  id?: string | number
+  content?: string
+  message?: string
+  body?: string
+  status?: string
+  user?: {
+    name?: string
+    username?: string
+  }
+  author?: {
+    name?: string
+    username?: string
+  }
+  post?: {
+    title?: string
+  }
+  post_title?: string
+}
+
+type CommentItem = {
+  id: string
+  author: string
+  post: string
+  message: string
+  status: string
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null
+}
+
+const extractCommentArray = (payload: unknown): ApiComment[] => {
+  if (Array.isArray(payload)) {
+    return payload.filter(isRecord) as ApiComment[]
+  }
+
+  if (!isRecord(payload)) {
+    return []
+  }
+
+  const directData = payload.data
+
+  if (Array.isArray(directData)) {
+    return directData.filter(isRecord) as ApiComment[]
+  }
+
+  if (isRecord(directData) && Array.isArray(directData.data)) {
+    return directData.data.filter(isRecord) as ApiComment[]
+  }
+
+  return []
+}
+
+const normalizeStatus = (status?: string) => {
+  if (!status) return 'Pending'
+
+  const normalized = status.trim().toLowerCase()
+
+  if (['approved', 'approve'].includes(normalized)) return 'Approved'
+  if (['pending', 'review'].includes(normalized)) return 'Pending'
+  if (['spam', 'blocked', 'rejected', 'reject'].includes(normalized)) return 'Spam'
+
+  return status
+}
+
+const mapApiComment = (comment: ApiComment): CommentItem => {
+  const author =
+    comment.user?.name ??
+    comment.user?.username ??
+    comment.author?.name ??
+    comment.author?.username ??
+    'Anon'
+
+  const post = comment.post?.title ?? comment.post_title ?? 'Tanpa Judul Post'
+  const message = (comment.content ?? comment.message ?? comment.body ?? '-').trim() || '-'
+
+  return {
+    id: String(comment.id ?? '-'),
+    author,
+    post,
+    message,
+    status: normalizeStatus(comment.status),
+  }
+}
 
 const CommentsPage = () => {
   const user = useAuthStore((state) => state.user)
+  const [comments, setComments] = useState<CommentItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const displayName = useMemo(() => {
     return formatDisplayName(user?.fullname ?? user?.name, user?.username, user?.email)
   }, [user])
+
+  useEffect(() => {
+    const loadComments = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const { data } = await api.get('/v1/comments')
+        setComments(extractCommentArray(data).map(mapApiComment))
+      } catch {
+        setError('Gagal memuat data komentar dari server.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    void loadComments()
+  }, [])
+
+  const pendingCount = useMemo(() => comments.filter((item) => item.status === 'Pending').length, [comments])
+  const approvedCount = useMemo(() => comments.filter((item) => item.status === 'Approved').length, [comments])
+  const blockedCount = useMemo(() => comments.filter((item) => item.status === 'Spam').length, [comments])
 
   const getStatusClasses = (status: string) => {
     if (status === 'Approved') return 'bg-emerald-100 text-emerald-700'
@@ -76,20 +182,27 @@ const CommentsPage = () => {
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             <article className="rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Pending</p>
-              <p className="mt-2 text-4xl font-black text-amber-600">4</p>
+              <p className="mt-2 text-4xl font-black text-amber-600">{pendingCount}</p>
             </article>
             <article className="rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Approved</p>
-              <p className="mt-2 text-4xl font-black text-emerald-600">28</p>
+              <p className="mt-2 text-4xl font-black text-emerald-600">{approvedCount}</p>
             </article>
             <article className="rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Blocked</p>
-              <p className="mt-2 text-4xl font-black text-rose-600">2</p>
+              <p className="mt-2 text-4xl font-black text-rose-600">{blockedCount}</p>
             </article>
           </div>
 
           <div className="mt-8 space-y-3">
-            {comments.map((item) => (
+            {isLoading ? <p className="text-sm text-slate-500">Memuat komentar...</p> : null}
+            {!isLoading && error ? <p className="text-sm font-semibold text-rose-600">{error}</p> : null}
+            {!isLoading && !error && comments.length === 0 ? (
+              <p className="text-sm text-slate-500">Belum ada komentar.</p>
+            ) : null}
+
+            {!isLoading && !error
+              ? comments.map((item) => (
               <article key={item.id} className="rounded-[20px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-2">
@@ -122,7 +235,8 @@ const CommentsPage = () => {
                   </div>
                 </div>
               </article>
-            ))}
+                ))
+              : null}
           </div>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">

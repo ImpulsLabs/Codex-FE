@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { AppShell } from '../../layouts/AppShell'
+import api from '../../lib/axios'
 
 const Icons = {
   Post: () => (
@@ -39,47 +40,158 @@ const formatDisplayName = (fullname?: string, username?: string, email?: string)
   return 'Pengguna'
 }
 
-const posts = [
-  {
-    id: 'ART-1024',
-    title: 'Meningkatkan CTR dengan Headline yang Tajam',
-    category: 'Marketing',
-    status: 'Published',
-    date: '07 Mar 2026',
-    views: 2841,
-  },
-  {
-    id: 'ART-1025',
-    title: 'Checklist SEO Teknis untuk Website Baru',
-    category: 'SEO',
-    status: 'Draft',
-    date: '06 Mar 2026',
-    views: 0,
-  },
-  {
-    id: 'ART-1026',
-    title: 'Mengukur Kualitas Konten dari Search Intent',
-    category: 'Content',
-    status: 'Review',
-    date: '05 Mar 2026',
-    views: 312,
-  },
-  {
-    id: 'ART-1027',
-    title: 'Panduan Menulis Article Pillar yang Evergreen',
-    category: 'Editorial',
-    status: 'Published',
-    date: '03 Mar 2026',
-    views: 1942,
-  },
-]
+type ApiPost = {
+  id?: string | number
+  title?: string
+  name?: string
+  category?: string | { name?: string }
+  category_name?: string
+  status?: string
+  views?: number | string
+  view_count?: number | string
+  created_at?: string
+  published_at?: string
+}
+
+type ApiPostsResponse = {
+  data?: unknown
+}
+
+type PostRow = {
+  id: string
+  title: string
+  category: string
+  status: string
+  views: number
+  date: string
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null
+}
+
+const toStatusLabel = (status?: string) => {
+  if (!status) {
+    return 'Draft'
+  }
+
+  const normalized = status.trim().toLowerCase()
+
+  if (['published', 'publish'].includes(normalized)) return 'Published'
+  if (['review', 'pending', 'pending_review'].includes(normalized)) return 'Review'
+  if (['draft'].includes(normalized)) return 'Draft'
+  return status
+}
+
+const formatPostDate = (value?: string) => {
+  if (!value) {
+    return '-'
+  }
+
+  const parsed = new Date(value)
+
+  if (Number.isNaN(parsed.getTime())) {
+    return value
+  }
+
+  return parsed.toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+const extractPostArray = (payload: unknown): ApiPost[] => {
+  if (Array.isArray(payload)) {
+    return payload.filter(isRecord) as ApiPost[]
+  }
+
+  if (!isRecord(payload)) {
+    return []
+  }
+
+  const directData = payload.data
+
+  if (Array.isArray(directData)) {
+    return directData.filter(isRecord) as ApiPost[]
+  }
+
+  if (isRecord(directData) && Array.isArray(directData.data)) {
+    return directData.data.filter(isRecord) as ApiPost[]
+  }
+
+  return []
+}
+
+const mapApiPostToRow = (post: ApiPost): PostRow => {
+  const id = String(post.id ?? '-')
+  const title = (post.title ?? post.name ?? 'Untitled').trim() || 'Untitled'
+  const category =
+    (typeof post.category === 'string' ? post.category : post.category?.name) ??
+    post.category_name ??
+    '-'
+
+  const parsedViews = Number(post.views ?? post.view_count ?? 0)
+
+  return {
+    id,
+    title,
+    category,
+    status: toStatusLabel(post.status),
+    views: Number.isFinite(parsedViews) ? parsedViews : 0,
+    date: formatPostDate(post.published_at ?? post.created_at),
+  }
+}
 
 const PostsPage = () => {
   const user = useAuthStore((state) => state.user)
+  const [posts, setPosts] = useState<PostRow[]>([])
+  const [search, setSearch] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const displayName = useMemo(() => {
     return formatDisplayName(user?.fullname ?? user?.name, user?.username, user?.email)
   }, [user])
+
+  useEffect(() => {
+    const loadPosts = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const { data } = await api.get<ApiPostsResponse | ApiPost[]>('/v1/posts')
+        const mappedPosts = extractPostArray(data).map(mapApiPostToRow)
+        setPosts(mappedPosts)
+      } catch {
+        setError('Gagal memuat data post dari server.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    void loadPosts()
+  }, [])
+
+  const filteredPosts = useMemo(() => {
+    const keyword = search.trim().toLowerCase()
+
+    if (!keyword) {
+      return posts
+    }
+
+    return posts.filter((post) => {
+      return post.title.toLowerCase().includes(keyword) || post.category.toLowerCase().includes(keyword)
+    })
+  }, [posts, search])
+
+  const publishedCount = useMemo(() => {
+    return posts.filter((post) => post.status === 'Published').length
+  }, [posts])
+
+  const reviewCount = useMemo(() => {
+    return posts.filter((post) => post.status === 'Review').length
+  }, [posts])
 
   const getStatusClasses = (status: string) => {
     if (status === 'Published') return 'bg-emerald-100 text-emerald-700'
@@ -111,15 +223,15 @@ const PostsPage = () => {
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             <article className="rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Posts</p>
-              <p className="mt-2 text-4xl font-black text-slate-800">24</p>
+              <p className="mt-2 text-4xl font-black text-slate-800">{posts.length}</p>
             </article>
             <article className="rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Published</p>
-              <p className="mt-2 text-4xl font-black text-slate-800">17</p>
+              <p className="mt-2 text-4xl font-black text-slate-800">{publishedCount}</p>
             </article>
             <article className="rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Need Review</p>
-              <p className="mt-2 text-4xl font-black text-slate-800">5</p>
+              <p className="mt-2 text-4xl font-black text-slate-800">{reviewCount}</p>
             </article>
           </div>
 
@@ -130,6 +242,8 @@ const PostsPage = () => {
                 <input
                   type="text"
                   placeholder="Cari judul post..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
                   className="w-full border-none bg-transparent text-slate-700 outline-none placeholder:text-slate-400"
                 />
               </label>
@@ -155,7 +269,32 @@ const PostsPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {posts.map((post) => (
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-sm text-slate-500">
+                        Memuat data post...
+                      </td>
+                    </tr>
+                  ) : null}
+
+                  {!isLoading && error ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-sm font-semibold text-rose-600">
+                        {error}
+                      </td>
+                    </tr>
+                  ) : null}
+
+                  {!isLoading && !error && filteredPosts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-sm text-slate-500">
+                        Data post tidak ditemukan.
+                      </td>
+                    </tr>
+                  ) : null}
+
+                  {!isLoading && !error
+                    ? filteredPosts.map((post) => (
                     <tr key={post.id} className="border-t border-slate-100 bg-white transition-colors hover:bg-slate-50/80">
                       <td className="px-4 py-3 font-semibold text-slate-500">{post.id}</td>
                       <td className="px-4 py-3 font-semibold text-slate-800">{post.title}</td>
@@ -168,7 +307,8 @@ const PostsPage = () => {
                       <td className="px-4 py-3 text-slate-600">{post.views.toLocaleString('id-ID')}</td>
                       <td className="px-4 py-3 text-slate-600">{post.date}</td>
                     </tr>
-                  ))}
+                      ))
+                    : null}
                 </tbody>
               </table>
             </div>

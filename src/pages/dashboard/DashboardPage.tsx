@@ -15,7 +15,11 @@ const Icons = {
   Category: () => <IconImage src="/Icons/Category.svg" className="h-5 w-5" />,
   Comment: () => <IconImage src="/Icons/Comment.svg" className="h-5 w-5" />,
   Users: () => <IconImage src="/Icons/Users.svg" className="h-5 w-5" />,
-  Plus: () => <IconImage src="/Icons/Plus.svg" className="h-5 w-5" />,
+  Plus: () => (
+    <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+    </svg>
+  ),
   Clock: () => <IconImage src="/Icons/Clock.svg" className="h-4 w-4" />,
   Analytics: () => <IconImage src="/Icons/Analytics.svg" className="h-5 w-5" />,
 }

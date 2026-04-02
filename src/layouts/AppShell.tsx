@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { PropsWithChildren } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { logout } from '../features/auth/api/logout'
 
 const MAIN_NAV_ITEMS = [
   { label: 'Dashboard', path: '/dashboard' },
@@ -24,12 +25,30 @@ export const AppShell = ({ children, contentClassName }: AppShellProps) => {
   const location = useLocation()
   const clearAuth = useAuthStore((state) => state.clearAuth)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return
+    }
+
+    setIsLoggingOut(true)
+
+    try {
+      await logout()
+    } catch {
+      // Clear local session even if backend logout fails.
+    } finally {
+      clearAuth()
+      setIsLoggingOut(false)
+    }
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 pb-12 pt-28 sm:px-6 sm:pt-32">
@@ -56,11 +75,14 @@ export const AppShell = ({ children, contentClassName }: AppShellProps) => {
 
           <button
             type="button"
-            onClick={clearAuth}
-            className="mr-1 flex items-center gap-2 rounded-[20px] bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 hover:text-slate-900"
+            onClick={() => {
+              void handleLogout()
+            }}
+            disabled={isLoggingOut}
+            className="mr-1 flex items-center gap-2 rounded-[20px] bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-70"
           >
             <LogoutIcon />
-            <span className="hidden sm:inline">Logout</span>
+            <span className="hidden sm:inline">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
           </button>
         </nav>
       </header>

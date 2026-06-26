@@ -6,7 +6,7 @@ import { logout } from '../features/auth/api/logout'
 
 const MAIN_NAV_ITEMS = [
   { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Articles', path: '/articles' },
+  { label: 'Articles', path: '/' },
   { label: 'Posts', path: '/posts' },
   { label: 'Categories', path: '/categories' },
   { label: 'Comments', path: '/comments' },
@@ -29,6 +29,7 @@ export const AppShell = ({ children, contentClassName, contentMaxWidthClassName 
   const location = useLocation()
   const navigate = useNavigate()
   const token = useAuthStore((state) => state.token)
+  const user = useAuthStore((state) => state.user)
   const clearAuth = useAuthStore((state) => state.clearAuth)
   const [isScrolled, setIsScrolled] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -66,7 +67,11 @@ export const AppShell = ({ children, contentClassName, contentMaxWidthClassName 
           </Link>
 
           <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1">
-            {MAIN_NAV_ITEMS.filter((item) => token || item.path === '/').map((item) => {
+            {MAIN_NAV_ITEMS.filter((item) => {
+              if (!token) return item.path === '/'
+              if (item.path === '/users') return user?.role === 'admin'
+              return true
+            }).map((item) => {
               const isActive = item.path === '/'
                 ? location.pathname === '/' || location.pathname.startsWith('/articles/')
                 : location.pathname === item.path

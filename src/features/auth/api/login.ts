@@ -18,7 +18,8 @@ const buildLoginFormData = (payload: LoginPayload) => {
 }
 
 const mapLoginUser = (user: LoginApiUser): User => {
-  const { accessToken: _accessToken, ...userWithoutToken } = user
+  const userWithoutToken = { ...user }
+  delete userWithoutToken.accessToken
 
   return {
     ...userWithoutToken,

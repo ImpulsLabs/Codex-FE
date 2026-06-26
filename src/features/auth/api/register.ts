@@ -20,7 +20,8 @@ const buildRegisterFormData = (payload: RegisterPayload) => {
 }
 
 const mapRegisterUser = (user: RegisterApiUser): User => {
-  const { accessToken: _accessToken, ...userWithoutToken } = user
+  const userWithoutToken = { ...user }
+  delete userWithoutToken.accessToken
 
   return {
     ...userWithoutToken,

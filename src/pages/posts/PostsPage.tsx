@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { isAxiosError } from 'axios'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
@@ -221,7 +221,7 @@ const PostsPage = () => {
     return formatDisplayName(user?.fullname ?? user?.name, user?.username, user?.email)
   }, [user])
 
-  const loadPosts = async () => {
+  const loadPosts = useCallback(async () => {
     setIsLoading(true)
     setError(null)
 
@@ -247,11 +247,11 @@ const PostsPage = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [limit, page, search])
 
   useEffect(() => {
     void loadPosts()
-  }, [limit, page, reloadKey, search])
+  }, [loadPosts, reloadKey])
 
   useEffect(() => {
     const loadCategories = async () => {

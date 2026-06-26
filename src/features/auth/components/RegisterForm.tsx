@@ -1,31 +1,69 @@
 import { useState } from 'react'
+import { isAxiosError } from 'axios'
 import { Link, useNavigate } from 'react-router-dom'
 import { register } from '../api/register'
+import { useAuthStore } from '../../../stores/authStore'
+
+type ApiErrorPayload = {
+  message?: string
+  errors?: Record<string, string[]>
+}
+
+const resolveErrorMessage = (error: unknown) => {
+  if (isAxiosError<ApiErrorPayload>(error)) {
+    const responseData = error.response?.data
+
+    if (responseData?.errors) {
+      const firstError = Object.values(responseData.errors)[0]?.[0]
+
+      if (firstError) {
+        return firstError
+      }
+    }
+
+    if (responseData?.message) {
+      return responseData.message
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return 'Register gagal!'
+}
 
 export const RegisterForm = () => {
   const navigate = useNavigate()
+  const setAuth = useAuthStore((state) => state.setAuth)
 
-  const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
+  const [fullname, setFullname] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setLoading(true)
     setError(null)
+    setSuccess(null)
 
     try {
-      await register({
-        name,
+      const authResponse = await register({
+        fullname,
+        username,
         email,
         password,
       })
 
-      navigate('/login')
-    } catch {
-      setError('Register gagal!')
+      setAuth(authResponse.token, authResponse.user)
+      setSuccess('Register berhasil! Mengarahkan ke dashboard...')
+      navigate('/dashboard', { replace: true })
+    } catch (error) {
+      setError(resolveErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -37,12 +75,22 @@ export const RegisterForm = () => {
 
       <form className="mt-5" onSubmit={handleSubmit}>
         <input
-          id="name"
+          id="username"
           type="text"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
           className="mt-[15px] w-full rounded-[20px] border-x-2 border-x-transparent bg-white px-5 py-[15px] text-sm text-slate-800 shadow-[0px_10px_10px_-5px_rgba(15,23,42,0.08)] outline-none placeholder:text-slate-400 focus:border-x-slate-400"
           placeholder="Username"
+          required
+        />
+
+        <input
+          id="fullname"
+          type="text"
+          value={fullname}
+          onChange={(event) => setFullname(event.target.value)}
+          className="mt-[15px] w-full rounded-[20px] border-x-2 border-x-transparent bg-white px-5 py-[15px] text-sm text-slate-800 shadow-[0px_10px_10px_-5px_rgba(15,23,42,0.08)] outline-none placeholder:text-slate-400 focus:border-x-slate-400"
+          placeholder="Full Name"
           required
         />
 
@@ -66,7 +114,8 @@ export const RegisterForm = () => {
           required
         />
 
-        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+          {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+          {success ? <p className="mt-3 text-sm text-emerald-600">{success}</p> : null}
 
         <button
           type="submit"

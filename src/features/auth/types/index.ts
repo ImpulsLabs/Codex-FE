@@ -1,17 +1,21 @@
 export interface User {
   id: number | string
-  name: string
+  name?: string
+  fullname?: string
+  username?: string
   email: string
+  role?: string
+  accessToken?: string
 }
 
 export interface LoginPayload {
-  email?: string
-  username?: string
+  user: string
   password: string
 }
 
 export interface RegisterPayload {
-  name: string
+  fullname: string
+  username: string
   email: string
   password: string
 }

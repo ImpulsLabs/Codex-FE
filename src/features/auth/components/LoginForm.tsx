@@ -1,10 +1,41 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { isAxiosError } from 'axios'
+import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../api/login'
 import type { LoginPayload } from '../types'
 import { useAuthStore } from '../../../stores/authStore'
 
+type ApiErrorPayload = {
+  message?: string
+  errors?: Record<string, string[]>
+}
+
+const resolveErrorMessage = (error: unknown) => {
+  if (isAxiosError<ApiErrorPayload>(error)) {
+    const responseData = error.response?.data
+
+    if (responseData?.errors) {
+      const firstError = Object.values(responseData.errors)[0]?.[0]
+
+      if (firstError) {
+        return firstError
+      }
+    }
+
+    if (responseData?.message) {
+      return responseData.message
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return 'Login gagal!'
+}
+
 export const LoginForm = () => {
+  const navigate = useNavigate()
   const setAuth = useAuthStore((state) => state.setAuth)
 
   const [loginValue, setLoginValue] = useState('')
@@ -14,17 +45,8 @@ export const LoginForm = () => {
   const [success, setSuccess] = useState<string | null>(null)
 
   const buildLoginPayload = (): LoginPayload => {
-    const value = loginValue.trim()
-
-    if (value.includes('@')) {
-      return {
-        email: value,
-        password,
-      }
-    }
-
     return {
-      username: value,
+      user: loginValue.trim(),
       password,
     }
   }
@@ -38,17 +60,17 @@ export const LoginForm = () => {
     try {
       const response = await login(buildLoginPayload())
       setAuth(response.token, response.user)
-      localStorage.setItem('auth_token', response.token)
-      setSuccess('Login berhasil!')
-    } catch {
-      setError('Login gagal!')
+      setSuccess('Login berhasil! Mengarahkan ke dashboard...')
+      navigate('/dashboard', { replace: true })
+    } catch (error) {
+      setError(resolveErrorMessage(error))
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="mx-auto my-5 max-w-[550px] rounded-[40px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 px-[35px] py-[25px] shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)]">
+    <div className="mx-auto my-5 max-w-[550px] rounded-[40px] border-[5px] border-white bg-linear-to-b from-white to-slate-50 px-[35px] py-[25px] shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)]">
       <h1 className="text-center text-[30px] font-black text-slate-800">Login</h1>
 
       <form className="mt-5" onSubmit={handleSubmit}>

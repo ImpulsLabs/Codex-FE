@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { isAxiosError } from 'axios'
 import { Link, useNavigate } from 'react-router-dom'
 import { register } from '../api/register'
-import { login } from '../api/login'
 import { useAuthStore } from '../../../stores/authStore'
 
 type ApiErrorPayload = {
@@ -53,30 +52,12 @@ export const RegisterForm = () => {
     setSuccess(null)
 
     try {
-      await register({
+      const authResponse = await register({
         fullname,
         username,
         email,
         password,
       })
-
-      let authResponse
-
-      try {
-        authResponse = await login({
-          user: username.trim(),
-          password,
-        })
-      } catch (usernameLoginError) {
-        if (username.trim().toLowerCase() === email.trim().toLowerCase()) {
-          throw usernameLoginError
-        }
-
-        authResponse = await login({
-          user: email.trim(),
-          password,
-        })
-      }
 
       setAuth(authResponse.token, authResponse.user)
       setSuccess('Register berhasil! Mengarahkan ke dashboard...')

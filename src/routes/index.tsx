@@ -1,87 +1,94 @@
+import { lazy, Suspense } from 'react'
+import type { ReactNode } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import LoginPage from '../pages/auth/LoginPage'
-import RegisterPage from '../pages/auth/RegisterPage'
-import DashboardPage from '../pages/dashboard/DashboardPage'
-import PostsPage from '../pages/posts/PostsPage'
-import CategoriesPage from '../pages/categories/CategoriesPage'
-import CommentsPage from '../pages/comments/CommentsPage'
-import UsersPage from '../pages/users/UsersPage'
-import ProfilePage from '../pages/profile/ProfilePage'
-import HomePage from '../pages/public/HomePage'
-import ArticleDetailPage from '../pages/public/ArticleDetailPage'
 import { ProtectedRoute, PublicOnlyRoute } from './RouteGuards'
+
+const LoginPage = lazy(() => import('../pages/auth/LoginPage'))
+const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'))
+const DashboardPage = lazy(() => import('../pages/dashboard/DashboardPage'))
+const PostsPage = lazy(() => import('../pages/posts/PostsPage'))
+const CategoriesPage = lazy(() => import('../pages/categories/CategoriesPage'))
+const CommentsPage = lazy(() => import('../pages/comments/CommentsPage'))
+const UsersPage = lazy(() => import('../pages/users/UsersPage'))
+const ProfilePage = lazy(() => import('../pages/profile/ProfilePage'))
+const HomePage = lazy(() => import('../pages/public/HomePage'))
+const ArticleDetailPage = lazy(() => import('../pages/public/ArticleDetailPage'))
+
+const withPageLoader = (page: ReactNode) => {
+  return <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>{page}</Suspense>
+}
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <HomePage />,
+    element: withPageLoader(<HomePage />),
   },
   {
     path: '/articles/:slug',
-    element: <ArticleDetailPage />,
+    element: withPageLoader(<ArticleDetailPage />),
   },
   {
     path: '/login',
-    element: (
+    element: withPageLoader(
       <PublicOnlyRoute>
         <LoginPage />
-      </PublicOnlyRoute>
+      </PublicOnlyRoute>,
     ),
   },
   {
     path: '/register',
-    element: (
+    element: withPageLoader(
       <PublicOnlyRoute>
         <RegisterPage />
-      </PublicOnlyRoute>
+      </PublicOnlyRoute>,
     ),
   },
   {
     path: '/dashboard',
-    element: (
+    element: withPageLoader(
       <ProtectedRoute>
         <DashboardPage />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: '/posts',
-    element: (
+    element: withPageLoader(
       <ProtectedRoute>
         <PostsPage />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: '/categories',
-    element: (
+    element: withPageLoader(
       <ProtectedRoute>
         <CategoriesPage />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: '/comments',
-    element: (
+    element: withPageLoader(
       <ProtectedRoute>
         <CommentsPage />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: '/users',
-    element: (
+    element: withPageLoader(
       <ProtectedRoute>
         <UsersPage />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: '/profile',
-    element: (
+    element: withPageLoader(
       <ProtectedRoute>
         <ProfilePage />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {

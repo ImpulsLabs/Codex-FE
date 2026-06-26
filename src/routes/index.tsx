@@ -9,6 +9,7 @@ import CommentsPage from '../pages/comments/CommentsPage'
 import UsersPage from '../pages/users/UsersPage'
 import ProfilePage from '../pages/profile/ProfilePage'
 import HomePage from '../pages/public/HomePage'
+import ArticleDetailPage from '../pages/public/ArticleDetailPage'
 import { useAuthStore } from '../stores/authStore'
 
 const PublicOnlyRoute = ({ children }: { children: ReactNode }) => {
@@ -35,6 +36,10 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <HomePage />,
+  },
+  {
+    path: '/articles/:slug',
+    element: <ArticleDetailPage />,
   },
   {
     path: '/login',

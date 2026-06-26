@@ -67,7 +67,9 @@ export const AppShell = ({ children, contentClassName, contentMaxWidthClassName 
 
           <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1">
             {MAIN_NAV_ITEMS.filter((item) => token || item.path === '/').map((item) => {
-              const isActive = location.pathname === item.path
+              const isActive = item.path === '/'
+                ? location.pathname === '/' || location.pathname.startsWith('/articles/')
+                : location.pathname === item.path
               return (
                 <Link
                   key={item.label}

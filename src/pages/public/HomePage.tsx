@@ -148,11 +148,11 @@ const HomePage = () => {
 
   return (
     <AppShell contentMaxWidthClassName="max-w-6xl">
-      <div className="py-2">
+      <div className="rounded-[40px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-8 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:p-10">
         <div className="grid gap-8 lg:grid-cols-[1fr_340px] lg:items-end">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Published Articles</p>
-            <h1 className="mt-3 max-w-3xl text-4xl font-black text-slate-950 sm:text-5xl">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Published Articles</p>
+            <h1 className="mt-3 max-w-3xl text-3xl font-black text-slate-800 sm:text-4xl">
               Baca artikel terbaru dari ImpulsLabs
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
@@ -160,7 +160,10 @@ const HomePage = () => {
             </p>
           </div>
 
-          <form onSubmit={handleSearchSubmit} className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+          <form
+            onSubmit={handleSearchSubmit}
+            className="rounded-[24px] border-2 border-white bg-white p-3 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]"
+          >
             <label htmlFor="article-search" className="sr-only">
               Cari artikel
             </label>
@@ -171,13 +174,13 @@ const HomePage = () => {
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Cari artikel..."
-                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-400"
+                className="min-w-0 flex-1 rounded-[16px] border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-400"
               />
               {searchInput || hasActiveSearch ? (
                 <button
                   type="button"
                   onClick={handleClearSearch}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100"
+                  className="rounded-[16px] border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100"
                 >
                   Reset
                 </button>
@@ -185,7 +188,7 @@ const HomePage = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-[16px] bg-slate-800 px-4 py-2.5 text-sm font-bold text-white shadow-[0px_10px_15px_-10px_rgba(15,23,42,0.4)] transition-all hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 Cari
               </button>
@@ -193,7 +196,7 @@ const HomePage = () => {
           </form>
         </div>
 
-        <div className="mt-8 flex flex-col gap-3 border-y border-slate-200 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-8 flex flex-col gap-3 rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)] sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-slate-700">{isLoading ? 'Memuat artikel...' : rangeText}</p>
             {hasActiveSearch ? (
@@ -210,7 +213,7 @@ const HomePage = () => {
               value={limit}
               onChange={handleLimitChange}
               disabled={isLoading}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-400"
+              className="rounded-[16px] border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-400"
             >
               <option value={6}>6</option>
               <option value={9}>9</option>
@@ -220,12 +223,12 @@ const HomePage = () => {
         </div>
 
         {error ? (
-          <div className="mt-8 flex flex-col gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-4 text-sm font-semibold text-rose-700 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-8 flex flex-col gap-3 rounded-[24px] border-2 border-white bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-700 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)] sm:flex-row sm:items-center sm:justify-between">
             <span>{error}</span>
             <button
               type="button"
               onClick={() => setReloadKey((current) => current + 1)}
-              className="rounded-lg bg-white px-3 py-2 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100"
+              className="rounded-[16px] bg-white px-3 py-2 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100"
             >
               Coba lagi
             </button>
@@ -233,7 +236,7 @@ const HomePage = () => {
         ) : null}
 
         {!isLoading && !error && articles.length === 0 ? (
-          <div className="mt-8 rounded-lg border border-slate-200 bg-white px-4 py-10 text-center">
+          <div className="mt-8 rounded-[24px] border-2 border-white bg-white px-4 py-10 text-center shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
             <p className="text-sm font-semibold text-slate-600">Artikel tidak ditemukan.</p>
           </div>
         ) : null}
@@ -241,7 +244,10 @@ const HomePage = () => {
         <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {isLoading
             ? Array.from({ length: limit }, (_, index) => (
-                <article key={index} className="h-[420px] animate-pulse rounded-lg border border-slate-200 bg-white" />
+                <article
+                  key={index}
+                  className="h-[420px] animate-pulse rounded-[24px] border-2 border-white bg-white shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]"
+                />
               ))
             : articles.map((article) => {
                 const thumbnailUrl = getThumbnailUrl(article.thumbnail)
@@ -251,13 +257,13 @@ const HomePage = () => {
                 return (
                   <article
                     key={article.id}
-                    className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+                    className="overflow-hidden rounded-[24px] border-2 border-white bg-white shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)] transition-all hover:-translate-y-0.5 hover:shadow-[0px_18px_28px_-16px_rgba(15,23,42,0.22)]"
                   >
                     <div className="aspect-[16/10] bg-slate-200">
                       {thumbnailUrl ? (
                         <img src={thumbnailUrl} alt={article.title} className="h-full w-full object-cover" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-slate-900 px-6 text-center text-lg font-black text-white">
+                        <div className="flex h-full w-full items-center justify-center bg-slate-800 px-6 text-center text-lg font-black text-white">
                           {article.title}
                         </div>
                       )}
@@ -265,9 +271,12 @@ const HomePage = () => {
 
                     <div className="flex min-h-[230px] flex-col p-5">
                       <div className="flex flex-wrap gap-2 text-xs font-bold uppercase text-slate-500">
-                        <span>{article.category?.name || 'Uncategorized'}</span>
-                        <span>-</span>
-                        <span>{formatDate(article.created_at)}</span>
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                          {article.category?.name || 'Uncategorized'}
+                        </span>
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                          {formatDate(article.created_at)}
+                        </span>
                       </div>
 
                       <h2 className="mt-3 text-xl font-black leading-7 text-slate-900">{article.title}</h2>
@@ -277,7 +286,7 @@ const HomePage = () => {
                         <p className="min-w-0 truncate text-sm font-semibold text-slate-500">{author}</p>
                         <Link
                           to={`/articles/${article.slug}`}
-                          className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-700"
+                          className="rounded-[16px] bg-slate-800 px-3 py-2 text-sm font-bold text-white shadow-[0px_10px_15px_-10px_rgba(15,23,42,0.4)] transition-all hover:scale-[1.02]"
                         >
                           Baca
                         </Link>
@@ -294,7 +303,7 @@ const HomePage = () => {
               type="button"
               onClick={() => setPage((current) => Math.max(1, current - 1))}
               disabled={page <= 1}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-[16px] border-2 border-white bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)] transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Sebelumnya
             </button>
@@ -305,10 +314,10 @@ const HomePage = () => {
                   key={pageNumber}
                   type="button"
                   onClick={() => setPage(pageNumber)}
-                  className={`h-10 w-10 rounded-lg text-sm font-bold transition-colors ${
+                  className={`h-10 w-10 rounded-[16px] text-sm font-bold transition-colors ${
                     pageNumber === page
                       ? 'bg-slate-900 text-white'
-                      : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                      : 'border-2 border-white bg-white text-slate-700 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)] hover:bg-slate-50'
                   }`}
                 >
                   {pageNumber}
@@ -320,7 +329,7 @@ const HomePage = () => {
               type="button"
               onClick={() => setPage((current) => Math.min(lastPage, current + 1))}
               disabled={page >= lastPage}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-[16px] border-2 border-white bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)] transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Berikutnya
             </button>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { isAxiosError } from 'axios'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AppShell } from '../../layouts/AppShell'
 import api from '../../lib/axios'
 import { useAuthStore } from '../../stores/authStore'
@@ -12,6 +12,7 @@ type ApiProfile = {
   username?: string
   email?: string
   role?: string
+  articles?: unknown[]
 }
 
 type ApiErrorPayload = {
@@ -63,13 +64,17 @@ const extractProfile = (payload: unknown): ApiProfile | null => {
 const ProfilePage = () => {
   const authUser = useAuthStore((state) => state.user)
   const setUser = useAuthStore((state) => state.setUser)
+  const clearAuth = useAuthStore((state) => state.clearAuth)
+  const navigate = useNavigate()
 
   const [fullname, setFullname] = useState('')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('user')
+  const [articleCount, setArticleCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -81,6 +86,7 @@ const ProfilePage = () => {
       setUsername(authUser?.username ?? '')
       setEmail(authUser?.email ?? '')
       setRole(authUser?.role ?? 'user')
+      setArticleCount(0)
     }
 
     const loadProfile = async () => {
@@ -106,6 +112,7 @@ const ProfilePage = () => {
         setUsername(nextUsername)
         setEmail(nextEmail)
         setRole(nextRole)
+        setArticleCount(profile.articles?.length ?? 0)
 
         if (nextEmail) {
           setUser({
@@ -142,30 +149,25 @@ const ProfilePage = () => {
 
     const payload = {
       fullname: fullname.trim(),
-      username: username.trim(),
       email: email.trim(),
     }
 
-    const formData = new FormData()
-    formData.append('fullname', payload.fullname)
-    formData.append('username', payload.username)
-    formData.append('email', payload.email)
-
     try {
-      await api.put('/v1/profiles', formData, {
-        headers: {
-          Accept: 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-      })
+      const { data } = await api.put('/v1/profiles', payload)
+      const profile = extractProfile(data)
+      const nextFullname = profile?.fullname ?? payload.fullname
+      const nextEmail = profile?.email ?? payload.email
 
       setUser({
         id: authUser?.id ?? 'me',
-        fullname: payload.fullname,
-        username: payload.username,
-        email: payload.email,
+        fullname: nextFullname,
+        username,
+        email: nextEmail,
         role,
       })
+
+      setFullname(nextFullname)
+      setEmail(nextEmail)
 
       setSuccess('Profil berhasil diperbarui.')
     } catch (requestError) {
@@ -186,6 +188,29 @@ const ProfilePage = () => {
       }
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleDeleteProfile = async () => {
+    const confirmed = window.confirm('Hapus akun ini? Tindakan ini juga menghapus sesi login Anda.')
+    if (!confirmed) return
+
+    setIsDeleting(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      await api.delete('/v1/profiles')
+      clearAuth()
+      navigate('/login', { replace: true })
+    } catch (requestError) {
+      if (isAxiosError<ApiErrorPayload>(requestError)) {
+        setError(requestError.response?.data?.message ?? 'Gagal menghapus profil.')
+      } else {
+        setError('Gagal menghapus profil.')
+      }
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -224,11 +249,11 @@ const ProfilePage = () => {
               <input
                 type="text"
                 value={username}
-                onChange={(event) => setUsername(event.target.value)}
                 className="w-full rounded-[16px] border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
-                disabled={isLoading || isSaving}
+                disabled
                 required
               />
+              <p className="text-xs font-medium text-slate-400">Username tidak dapat diubah dari endpoint profile.</p>
             </label>
 
             <label className="space-y-2 text-sm font-semibold text-slate-700 sm:col-span-2">
@@ -258,6 +283,40 @@ const ProfilePage = () => {
             </button>
           </div>
         </form>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          <article className="rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Username</p>
+            <p className="mt-2 break-all text-sm font-bold text-slate-800">{username || '-'}</p>
+          </article>
+          <article className="rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Role</p>
+            <p className="mt-2 text-sm font-bold uppercase text-slate-800">{role}</p>
+          </article>
+          <article className="rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Posts</p>
+            <p className="mt-2 text-sm font-bold text-slate-800">{articleCount} post</p>
+          </article>
+        </div>
+
+        <div className="mt-6 rounded-[24px] border-2 border-white bg-white p-6 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)]">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Danger Zone</p>
+          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm leading-6 text-slate-600">
+              Menghapus profil akan menghapus akun yang sedang login dari backend.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                void handleDeleteProfile()
+              }}
+              disabled={isDeleting}
+              className="rounded-[16px] bg-rose-100 px-4 py-2.5 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isDeleting ? 'Menghapus...' : 'Hapus Profil'}
+            </button>
+          </div>
+        </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <Link

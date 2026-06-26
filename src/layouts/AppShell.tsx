@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { PropsWithChildren } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { logout } from '../features/auth/api/logout'
 
@@ -25,6 +25,7 @@ const LogoutIcon = () => (
 
 export const AppShell = ({ children, contentClassName }: AppShellProps) => {
   const location = useLocation()
+  const navigate = useNavigate()
   const clearAuth = useAuthStore((state) => state.clearAuth)
   const [isScrolled, setIsScrolled] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -49,6 +50,7 @@ export const AppShell = ({ children, contentClassName }: AppShellProps) => {
     } finally {
       clearAuth()
       setIsLoggingOut(false)
+      navigate('/login', { replace: true })
     }
   }
 

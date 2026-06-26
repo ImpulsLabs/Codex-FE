@@ -90,6 +90,9 @@ const HomePage = () => {
   const [rangeText, setRangeText] = useState('0 artikel')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  const hasActiveSearch = search.trim().length > 0
 
   useEffect(() => {
     const loadArticles = async () => {
@@ -123,7 +126,7 @@ const HomePage = () => {
     }
 
     void loadArticles()
-  }, [limit, page, search])
+  }, [limit, page, reloadKey, search])
 
   const pageNumbers = useMemo(() => buildPageNumbers(page, lastPage), [lastPage, page])
 
@@ -133,6 +136,12 @@ const HomePage = () => {
     setSearch(searchInput.trim())
   }
 
+  const handleClearSearch = () => {
+    setSearchInput('')
+    setSearch('')
+    setPage(1)
+  }
+
   const handleLimitChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setPage(1)
     setLimit(Number(event.target.value))
@@ -140,13 +149,30 @@ const HomePage = () => {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <Link to="/" className="text-xl font-black text-slate-900">
-            ImpulsLabs
-          </Link>
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex items-center justify-between gap-4">
+            <Link to="/" className="text-xl font-black text-slate-900">
+              ImpulsLabs
+            </Link>
 
-          <nav className="flex items-center gap-2">
+            <Link
+              to="/"
+              aria-current="page"
+              className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-bold text-slate-900 sm:hidden"
+            >
+              Artikel
+            </Link>
+          </div>
+
+          <nav className="flex items-center justify-between gap-2 sm:justify-end">
+            <Link
+              to="/"
+              aria-current="page"
+              className="hidden rounded-lg bg-slate-100 px-4 py-2 text-sm font-bold text-slate-900 sm:inline-flex"
+            >
+              Artikel
+            </Link>
             {token ? (
               <Link
                 to="/dashboard"
@@ -199,9 +225,19 @@ const HomePage = () => {
                 placeholder="Cari artikel..."
                 className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-400"
               />
+              {searchInput || hasActiveSearch ? (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100"
+                >
+                  Reset
+                </button>
+              ) : null}
               <button
                 type="submit"
-                className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-700"
+                disabled={isLoading}
+                className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 Cari
               </button>
@@ -210,12 +246,22 @@ const HomePage = () => {
         </div>
 
         <div className="mt-8 flex flex-col gap-3 border-y border-slate-200 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold text-slate-600">{isLoading ? 'Memuat artikel...' : rangeText}</p>
+          <div>
+            <p className="text-sm font-semibold text-slate-700">{isLoading ? 'Memuat artikel...' : rangeText}</p>
+            {hasActiveSearch ? (
+              <p className="mt-1 text-xs font-semibold text-slate-500">
+                Hasil pencarian untuk "{search}"
+              </p>
+            ) : (
+              <p className="mt-1 text-xs font-semibold text-slate-500">Menampilkan artikel published terbaru</p>
+            )}
+          </div>
           <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
             Tampilkan
             <select
               value={limit}
               onChange={handleLimitChange}
+              disabled={isLoading}
               className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-400"
             >
               <option value={6}>6</option>
@@ -226,8 +272,15 @@ const HomePage = () => {
         </div>
 
         {error ? (
-          <div className="mt-8 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-            {error}
+          <div className="mt-8 flex flex-col gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-4 text-sm font-semibold text-rose-700 sm:flex-row sm:items-center sm:justify-between">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={() => setReloadKey((current) => current + 1)}
+              className="rounded-lg bg-white px-3 py-2 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100"
+            >
+              Coba lagi
+            </button>
           </div>
         ) : null}
 
@@ -323,6 +376,10 @@ const HomePage = () => {
             >
               Berikutnya
             </button>
+
+            <p className="text-center text-xs font-bold uppercase tracking-wider text-slate-400 sm:hidden">
+              Halaman {page} dari {lastPage}
+            </p>
           </div>
         ) : null}
       </section>

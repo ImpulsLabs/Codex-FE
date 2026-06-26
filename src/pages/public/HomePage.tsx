@@ -147,7 +147,7 @@ const HomePage = () => {
   }
 
   return (
-    <AppShell contentMaxWidthClassName="max-w-6xl">
+    <AppShell>
       <div className="rounded-[40px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-8 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:p-10">
         <div className="grid gap-8 lg:grid-cols-[1fr_340px] lg:items-end">
           <div>
@@ -241,7 +241,7 @@ const HomePage = () => {
           </div>
         ) : null}
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-5 md:grid-cols-2">
           {isLoading
             ? Array.from({ length: limit }, (_, index) => (
                 <article

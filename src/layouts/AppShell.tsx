@@ -6,7 +6,7 @@ import { logout } from '../features/auth/api/logout'
 
 const MAIN_NAV_ITEMS = [
   { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Articles', path: '/' },
+  { label: 'Articles', path: '/articles' },
   { label: 'Posts', path: '/posts' },
   { label: 'Categories', path: '/categories' },
   { label: 'Comments', path: '/comments' },
@@ -59,7 +59,7 @@ export const AppShell = ({ children, contentClassName, contentMaxWidthClassName 
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 pb-12 pt-28 sm:px-6 sm:pt-32">
-      <header className={`fixed left-1/2 top-5 z-50 w-[calc(100%-2rem)] max-w-6xl -translate-x-1/2 transition-all duration-300 ${isScrolled ? 'top-3' : 'top-5'}`}>
+      <header className={`fixed left-1/2 top-5 z-50 w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 transition-all duration-300 ${isScrolled ? 'top-3' : 'top-5'}`}>
         <nav className="flex items-center justify-between gap-2 rounded-[30px] border-[3px] border-white bg-white/90 px-2 py-2 shadow-[0px_20px_25px_-15px_rgba(15,23,42,0.15)] backdrop-blur-md">
           <Link to="/" className="shrink-0 rounded-[20px] px-4 py-2.5 text-sm font-black text-slate-900">
             ImpulsLabs

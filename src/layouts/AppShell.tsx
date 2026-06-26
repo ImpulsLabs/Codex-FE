@@ -61,12 +61,12 @@ export const AppShell = ({ children, contentClassName, contentMaxWidthClassName 
   return (
     <main className="min-h-screen bg-slate-50 px-4 pb-12 pt-28 sm:px-6 sm:pt-32">
       <header className={`fixed left-1/2 top-5 z-50 w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 transition-all duration-300 ${isScrolled ? 'top-3' : 'top-5'}`}>
-        <nav className="flex items-center justify-between gap-2 rounded-[30px] border-[3px] border-white bg-white/90 px-2 py-2 shadow-[0px_20px_25px_-15px_rgba(15,23,42,0.15)] backdrop-blur-md">
-          <Link to="/" className="shrink-0 rounded-[20px] px-4 py-2.5 text-sm font-black text-slate-900">
+        <nav className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 rounded-[30px] border-[3px] border-white bg-white/90 px-2 py-2 shadow-[0px_20px_25px_-15px_rgba(15,23,42,0.15)] backdrop-blur-md">
+          <Link to="/" className="justify-self-start rounded-[20px] px-4 py-2.5 text-sm font-black text-slate-900">
             ImpulsLabs
           </Link>
 
-          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1">
+          <div className="flex min-w-0 max-w-full items-center justify-center gap-1 overflow-x-auto px-1">
             {MAIN_NAV_ITEMS.filter((item) => {
               if (!token) return item.path === '/'
               if (item.path === '/users') return user?.role === 'admin'
@@ -98,13 +98,13 @@ export const AppShell = ({ children, contentClassName, contentMaxWidthClassName 
                 void handleLogout()
               }}
               disabled={isLoggingOut}
-              className="mr-1 flex shrink-0 items-center gap-2 rounded-[20px] bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-70"
+              className="mr-1 flex items-center gap-2 justify-self-end rounded-[20px] bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-70"
             >
               <LogoutIcon />
               <span className="hidden sm:inline">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
             </button>
           ) : (
-            <div className="mr-1 flex shrink-0 items-center gap-1">
+            <div className="mr-1 flex items-center gap-1 justify-self-end">
               <Link
                 to="/login"
                 className="rounded-[20px] px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-slate-900"

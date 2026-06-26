@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { isAxiosError } from 'axios'
 import { Link, useParams } from 'react-router-dom'
 import api from '../../lib/axios'
 import { AppShell } from '../../layouts/AppShell'
@@ -51,6 +52,17 @@ type ArticleDetailResponse = {
   latest_articles: LatestArticle[]
 }
 
+type CreateCommentResponse = {
+  message: string
+  category?: ApiComment
+  comment?: ApiComment
+}
+
+type ApiErrorPayload = {
+  message?: string
+  errors?: Record<string, string[]>
+}
+
 const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api').replace(/\/api\/?$/, '')
 
 const formatDate = (value?: string) => {
@@ -72,6 +84,21 @@ const getThumbnailUrl = (thumbnail?: string | null) => {
   return `${API_ORIGIN}/storage/${thumbnail.replace(/^\/+/, '')}`
 }
 
+const resolveErrorMessage = (error: unknown) => {
+  if (isAxiosError<ApiErrorPayload>(error)) {
+    const responseData = error.response?.data
+
+    if (responseData?.errors) {
+      const firstError = Object.values(responseData.errors)[0]?.[0]
+      if (firstError) return firstError
+    }
+
+    if (responseData?.message) return responseData.message
+  }
+
+  return 'Komentar gagal dikirim.'
+}
+
 const ArticleDetailPage = () => {
   const { slug } = useParams()
   const [article, setArticle] = useState<ApiArticle | null>(null)
@@ -79,6 +106,12 @@ const ArticleDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [commentName, setCommentName] = useState('')
+  const [commentEmail, setCommentEmail] = useState('')
+  const [commentMessage, setCommentMessage] = useState('')
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false)
+  const [commentError, setCommentError] = useState<string | null>(null)
+  const [commentSuccess, setCommentSuccess] = useState<string | null>(null)
 
   useEffect(() => {
     const loadArticle = async () => {
@@ -149,6 +182,52 @@ const ArticleDetailPage = () => {
   const thumbnailUrl = getThumbnailUrl(article.thumbnail)
   const author = article.user?.fullname || article.user?.username || 'ImpulsLabs'
   const comments = article.comments ?? []
+
+  const handleCommentSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsSubmittingComment(true)
+    setCommentError(null)
+    setCommentSuccess(null)
+
+    const formData = new FormData()
+    formData.append('name', commentName.trim())
+    formData.append('email', commentEmail.trim())
+    formData.append('message', commentMessage.trim())
+    formData.append('article_id', String(article.id))
+
+    try {
+      const { data } = await api.post<CreateCommentResponse>('/v1/comments', formData, {
+        headers: {
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      })
+
+      const createdComment = data.comment ?? data.category
+
+      if (createdComment) {
+        setArticle((currentArticle) => {
+          if (!currentArticle) return currentArticle
+
+          return {
+            ...currentArticle,
+            comments: [...(currentArticle.comments ?? []), createdComment],
+          }
+        })
+      } else {
+        setReloadKey((current) => current + 1)
+      }
+
+      setCommentName('')
+      setCommentEmail('')
+      setCommentMessage('')
+      setCommentSuccess('Komentar berhasil dikirim.')
+    } catch (requestError) {
+      setCommentError(resolveErrorMessage(requestError))
+    } finally {
+      setIsSubmittingComment(false)
+    }
+  }
 
   return (
     <AppShell>
@@ -227,6 +306,61 @@ const ArticleDetailPage = () => {
               <h2 className="mt-2 text-2xl font-black text-slate-800">{comments.length} komentar</h2>
             </div>
           </div>
+
+          <form onSubmit={handleCommentSubmit} className="mt-6 rounded-[20px] bg-slate-50 p-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="space-y-2 text-sm font-semibold text-slate-700">
+                <span>Nama</span>
+                <input
+                  type="text"
+                  value={commentName}
+                  onChange={(event) => setCommentName(event.target.value)}
+                  className="w-full rounded-[16px] border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-400"
+                  placeholder="Nama pembaca"
+                  required
+                  disabled={isSubmittingComment}
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-semibold text-slate-700">
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={commentEmail}
+                  onChange={(event) => setCommentEmail(event.target.value)}
+                  className="w-full rounded-[16px] border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none focus:border-slate-400"
+                  placeholder="email@example.com"
+                  required
+                  disabled={isSubmittingComment}
+                />
+              </label>
+            </div>
+
+            <label className="mt-3 block space-y-2 text-sm font-semibold text-slate-700">
+              <span>Komentar</span>
+              <textarea
+                value={commentMessage}
+                onChange={(event) => setCommentMessage(event.target.value)}
+                className="min-h-28 w-full resize-y rounded-[16px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-slate-400"
+                placeholder="Tulis komentar..."
+                required
+                disabled={isSubmittingComment}
+              />
+            </label>
+
+            {commentError ? <p className="mt-3 text-sm font-semibold text-rose-600">{commentError}</p> : null}
+            {commentSuccess ? <p className="mt-3 text-sm font-semibold text-emerald-600">{commentSuccess}</p> : null}
+
+            <div className="mt-4 flex justify-end">
+              <button
+                type="submit"
+                disabled={isSubmittingComment}
+                className="rounded-[16px] bg-slate-800 px-4 py-2.5 text-sm font-bold text-white shadow-[0px_10px_15px_-10px_rgba(15,23,42,0.4)] transition-all hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isSubmittingComment ? 'Mengirim...' : 'Kirim Komentar'}
+              </button>
+            </div>
+          </form>
 
           <div className="mt-5 space-y-3">
             {comments.length > 0 ? (

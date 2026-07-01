@@ -3,6 +3,8 @@ import { isAxiosError } from 'axios'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { AppShell } from '../../layouts/AppShell'
+import { ConfirmModal } from '../../components/ConfirmModal'
+import { toast } from '../../lib/toast'
 import api from '../../lib/axios'
 
 const Icons = {
@@ -136,10 +138,10 @@ const CategoriesPage = () => {
   const [isDeletingSlug, setIsDeletingSlug] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [form, setForm] = useState<CategoryFormState>(emptyForm)
   const [reloadKey, setReloadKey] = useState(0)
+  const [deleteTarget, setDeleteTarget] = useState<ApiCategory | null>(null)
 
   const displayName = useMemo(() => {
     return formatDisplayName(user?.fullname ?? user?.name, user?.username, user?.email)
@@ -183,14 +185,12 @@ const CategoriesPage = () => {
   const openCreateModal = () => {
     setForm(emptyForm)
     setFormError(null)
-    setSuccess(null)
     setIsModalOpen(true)
   }
 
   const openEditModal = (category: ApiCategory) => {
     setForm(mapCategoryToForm(category))
     setFormError(null)
-    setSuccess(null)
     setIsModalOpen(true)
   }
 
@@ -213,15 +213,14 @@ const CategoriesPage = () => {
     event.preventDefault()
     setIsSaving(true)
     setFormError(null)
-    setSuccess(null)
 
     try {
       if (form.id && form.originalSlug) {
         await api.put<CategoryResponse>(`/v1/categories/${form.originalSlug}`, buildPayload(form))
-        setSuccess('Kategori berhasil diperbarui.')
+        toast.success('Kategori berhasil diperbarui.')
       } else {
         await api.post<CategoryResponse>('/v1/categories', buildPayload(form))
-        setSuccess('Kategori berhasil dibuat.')
+        toast.success('Kategori berhasil dibuat.')
       }
 
       setIsModalOpen(false)
@@ -234,22 +233,21 @@ const CategoriesPage = () => {
     }
   }
 
-  const handleDelete = async (category: ApiCategory) => {
-    const confirmed = window.confirm(`Hapus kategori "${category.name}"?`)
-    if (!confirmed) return
+  const handleDelete = async () => {
+    if (!deleteTarget) return
 
-    setIsDeletingSlug(category.slug)
+    setIsDeletingSlug(deleteTarget.slug)
     setError(null)
-    setSuccess(null)
 
     try {
-      await api.delete(`/v1/categories/${category.slug}`)
-      setSuccess('Kategori berhasil dihapus.')
+      await api.delete(`/v1/categories/${deleteTarget.slug}`)
+      toast.success('Kategori berhasil dihapus.')
       setReloadKey((current) => current + 1)
     } catch (requestError) {
-      setError(resolveErrorMessage(requestError))
+      toast.error(resolveErrorMessage(requestError))
     } finally {
       setIsDeletingSlug(null)
+      setDeleteTarget(null)
     }
   }
 
@@ -282,12 +280,6 @@ const CategoriesPage = () => {
             <p className="mt-2 text-2xl font-black text-emerald-600">{totalPostsInCategories} post</p>
           </article>
         </div>
-
-        {success ? (
-          <div className="mt-6 rounded-[20px] bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-            {success}
-          </div>
-        ) : null}
 
         {error ? (
           <div className="mt-6 rounded-[20px] bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
@@ -360,9 +352,7 @@ const CategoriesPage = () => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
-                              void handleDelete(item)
-                            }}
+                            onClick={() => setDeleteTarget(item)}
                             disabled={isDeletingSlug === item.slug}
                             className="rounded-[14px] bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-70"
                           >
@@ -422,6 +412,18 @@ const CategoriesPage = () => {
           </Link>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        title="Hapus Kategori"
+        message={`Apakah Anda yakin ingin menghapus kategori "${deleteTarget?.name}"? Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        isLoading={isDeletingSlug === deleteTarget?.slug}
+        variant="danger"
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {isModalOpen ? (
         <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/40 px-4 py-8 backdrop-blur-sm">

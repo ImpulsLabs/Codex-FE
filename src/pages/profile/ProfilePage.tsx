@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { isAxiosError } from 'axios'
 import { Link, useNavigate } from 'react-router-dom'
 import { AppShell } from '../../layouts/AppShell'
+import { ConfirmModal } from '../../components/ConfirmModal'
+import { toast } from '../../lib/toast'
 import api from '../../lib/axios'
 import { useAuthStore } from '../../stores/authStore'
 
@@ -76,7 +78,7 @@ const ProfilePage = () => {
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
 
   const headerName = useMemo(() => formatDisplayName(fullname, username, email), [fullname, username, email])
 
@@ -145,7 +147,6 @@ const ProfilePage = () => {
     event.preventDefault()
     setIsSaving(true)
     setError(null)
-    setSuccess(null)
 
     const payload = {
       fullname: fullname.trim(),
@@ -169,7 +170,7 @@ const ProfilePage = () => {
       setFullname(nextFullname)
       setEmail(nextEmail)
 
-      setSuccess('Profil berhasil diperbarui.')
+      toast.success('Profil berhasil diperbarui.')
     } catch (requestError) {
       if (isAxiosError<ApiErrorPayload>(requestError)) {
         const firstValidationError = requestError.response?.data?.errors
@@ -192,12 +193,8 @@ const ProfilePage = () => {
   }
 
   const handleDeleteProfile = async () => {
-    const confirmed = window.confirm('Hapus akun ini? Tindakan ini juga menghapus sesi login Anda.')
-    if (!confirmed) return
-
     setIsDeleting(true)
     setError(null)
-    setSuccess(null)
 
     try {
       await api.delete('/v1/profiles')
@@ -211,6 +208,7 @@ const ProfilePage = () => {
       }
     } finally {
       setIsDeleting(false)
+      setIsDeleteModalOpen(false)
     }
   }
 
@@ -270,8 +268,6 @@ const ProfilePage = () => {
           </div>
 
           {error ? <p className="mt-4 text-sm font-semibold text-rose-600">{error}</p> : null}
-          {success ? <p className="mt-4 text-sm font-semibold text-emerald-600">{success}</p> : null}
-
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-slate-500">{isLoading ? 'Memuat data profil...' : 'Data tersinkron dengan sesi login.'}</p>
             <button
@@ -307,9 +303,7 @@ const ProfilePage = () => {
             </p>
             <button
               type="button"
-              onClick={() => {
-                void handleDeleteProfile()
-              }}
+              onClick={() => setIsDeleteModalOpen(true)}
               disabled={isDeleting}
               className="rounded-[16px] bg-rose-100 px-4 py-2.5 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-70"
             >
@@ -333,6 +327,16 @@ const ProfilePage = () => {
           </Link>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        title="Hapus Profil"
+        message="Apakah Anda yakin ingin menghapus akun ini? Tindakan ini juga mengakhiri sesi login dan tidak dapat dibatalkan."
+        confirmLabel="Hapus Profil"
+        isLoading={isDeleting}
+        onConfirm={() => void handleDeleteProfile()}
+        onCancel={() => setIsDeleteModalOpen(false)}
+      />
     </AppShell>
   )
 }

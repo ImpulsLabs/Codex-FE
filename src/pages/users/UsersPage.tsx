@@ -3,6 +3,8 @@ import { isAxiosError } from 'axios'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { AppShell } from '../../layouts/AppShell'
+import { ConfirmModal } from '../../components/ConfirmModal'
+import { toast } from '../../lib/toast'
 import api from '../../lib/axios'
 
 const Icons = {
@@ -108,8 +110,8 @@ const UsersPage = () => {
   const [isDeletingUsername, setIsDeletingUsername] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<ApiUser | null>(null)
   const [form, setForm] = useState<UserFormState>({
     username: '',
     fullname: '',
@@ -182,7 +184,6 @@ const UsersPage = () => {
   const openEditModal = (user: ApiUser) => {
     setForm(mapUserToForm(user))
     setFormError(null)
-    setSuccess(null)
     setIsModalOpen(true)
   }
 
@@ -196,7 +197,6 @@ const UsersPage = () => {
     event.preventDefault()
     setIsSaving(true)
     setFormError(null)
-    setSuccess(null)
 
     try {
       await api.put(`/v1/users/${form.username}`, {
@@ -205,7 +205,7 @@ const UsersPage = () => {
         role: form.role,
       })
 
-      setSuccess('User berhasil diperbarui.')
+      toast.success('User berhasil diperbarui.')
       setIsModalOpen(false)
       setReloadKey((current) => current + 1)
     } catch (requestError) {
@@ -215,22 +215,21 @@ const UsersPage = () => {
     }
   }
 
-  const handleDelete = async (user: ApiUser) => {
-    const confirmed = window.confirm(`Hapus user "${user.username}"?`)
-    if (!confirmed) return
+  const handleDelete = async () => {
+    if (!deleteTarget) return
 
-    setIsDeletingUsername(user.username)
+    setIsDeletingUsername(deleteTarget.username)
     setError(null)
-    setSuccess(null)
 
     try {
-      await api.delete(`/v1/users/${user.username}`)
-      setSuccess('User berhasil dihapus.')
+      await api.delete(`/v1/users/${deleteTarget.username}`)
+      toast.success('User berhasil dihapus.')
       setReloadKey((current) => current + 1)
     } catch (requestError) {
-      setError(resolveErrorMessage(requestError))
+      toast.error(resolveErrorMessage(requestError))
     } finally {
       setIsDeletingUsername(null)
+      setDeleteTarget(null)
     }
   }
 
@@ -269,12 +268,6 @@ const UsersPage = () => {
             <p className="mt-2 text-4xl font-black text-slate-800">{authorCount}</p>
           </article>
         </div>
-
-        {success ? (
-          <div className="mt-6 rounded-[20px] bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-            {success}
-          </div>
-        ) : null}
 
         {error ? (
           <div className="mt-6 rounded-[20px] bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
@@ -361,9 +354,7 @@ const UsersPage = () => {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    void handleDelete(user)
-                                  }}
+                                  onClick={() => setDeleteTarget(user)}
                                   disabled={isDeletingUsername === user.username}
                                   className="rounded-[14px] bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-70"
                                 >
@@ -505,6 +496,16 @@ const UsersPage = () => {
           </div>
         </div>
       ) : null}
+
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        title="Hapus User"
+        message={`Apakah Anda yakin ingin menghapus user "${deleteTarget?.username}"? Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Hapus"
+        isLoading={isDeletingUsername === deleteTarget?.username}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </AppShell>
   )
 }

@@ -3,6 +3,9 @@ import { isAxiosError } from 'axios'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { AppShell } from '../../layouts/AppShell'
+import { RichTextEditor } from '../../components/RichTextEditor'
+import { ConfirmModal } from '../../components/ConfirmModal'
+import { toast } from '../../lib/toast'
 import api from '../../lib/axios'
 
 const Icons = {
@@ -114,19 +117,15 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 const extractCategories = (payload: unknown): ApiCategory[] => {
   if (Array.isArray(payload)) return payload.filter(isRecord) as ApiCategory[]
   if (!isRecord(payload)) return []
-
   if (Array.isArray(payload.categories)) return payload.categories.filter(isRecord) as ApiCategory[]
   if (Array.isArray(payload.data)) return payload.data.filter(isRecord) as ApiCategory[]
-
   return []
 }
 
 const formatPostDate = (value?: string) => {
   if (!value) return '-'
-
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) return value
-
   return parsed.toLocaleDateString('id-ID', {
     day: '2-digit',
     month: 'short',
@@ -155,15 +154,12 @@ const slugify = (value: string) => {
 const resolveErrorMessage = (error: unknown) => {
   if (isAxiosError<ApiErrorPayload>(error)) {
     const responseData = error.response?.data
-
     if (responseData?.errors) {
       const firstError = Object.values(responseData.errors)[0]?.[0]
       if (firstError) return firstError
     }
-
     if (responseData?.message) return responseData.message
   }
-
   return 'Request gagal diproses.'
 }
 
@@ -174,15 +170,12 @@ const buildPostFormData = (form: PostFormState) => {
   formData.append('content', form.content.trim())
   formData.append('description', form.description.trim())
   formData.append('status', form.status)
-
   if (form.categoryId) {
     formData.append('category_id', form.categoryId)
   }
-
   if (form.thumbnail) {
     formData.append('thumbnail', form.thumbnail)
   }
-
   return formData
 }
 
@@ -212,10 +205,12 @@ const PostsPage = () => {
   const [isDeletingId, setIsDeletingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [form, setForm] = useState<PostFormState>(emptyForm)
   const [reloadKey, setReloadKey] = useState(0)
+  const [filterCategory, setFilterCategory] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<ApiPost | null>(null)
 
   const displayName = useMemo(() => {
     return formatDisplayName(user?.fullname ?? user?.name, user?.username, user?.email)
@@ -226,28 +221,60 @@ const PostsPage = () => {
     setError(null)
 
     try {
-      const { data } = await api.get<PostsResponse>('/v1/posts', {
-        params: {
-          search,
-          limit,
-          page,
-        },
-      })
+      if (filterCategory || filterStatus) {
+        const { data: firstPage } = await api.get<PostsResponse>('/v1/posts', {
+          params: { search, limit: 50, page: 1 },
+        })
+        const remainingPages = Array.from(
+          { length: Math.max(0, firstPage.articles.last_page - 1) },
+          (_, index) => index + 2,
+        )
+        const remainingResponses = await Promise.all(
+          remainingPages.map((nextPage) =>
+            api.get<PostsResponse>('/v1/posts', { params: { search, limit: 50, page: nextPage } }),
+          ),
+        )
+        const allPosts = [
+          ...firstPage.articles.data,
+          ...remainingResponses.flatMap((response) => response.data.articles.data),
+        ]
+        const filteredPosts = allPosts.filter((post) => {
+          const categoryId = post.category_id ?? post.category?.id
+          const matchesCategory = !filterCategory || String(categoryId ?? '') === filterCategory
+          const matchesStatus = !filterStatus || post.status?.toLowerCase() === filterStatus
+          return matchesCategory && matchesStatus
+        })
+        const start = (page - 1) * limit
+        const pagePosts = filteredPosts.slice(start, start + limit)
+        const filteredLastPage = Math.max(1, Math.ceil(filteredPosts.length / limit))
 
-      setPosts(data.articles.data)
-      setLastPage(data.articles.last_page || 1)
-      setRangeText(
-        data.articles.from && data.articles.to
-          ? `${data.articles.from}-${data.articles.to} dari ${data.articles.total} post`
-          : `${data.articles.total} post`,
-      )
+        setPosts(pagePosts)
+        setLastPage(filteredLastPage)
+        setRangeText(
+          filteredPosts.length > 0
+            ? `${start + 1}-${start + pagePosts.length} dari ${filteredPosts.length} post`
+            : '0 post',
+        )
+      } else {
+        const { data } = await api.get<PostsResponse>('/v1/posts', {
+          params: { search, limit, page },
+        })
+
+        setPosts(data.articles.data)
+        setLastPage(data.articles.last_page || 1)
+        setRangeText(
+          data.articles.from && data.articles.to
+            ? `${data.articles.from}-${data.articles.to} dari ${data.articles.total} post`
+            : `${data.articles.total} post`,
+        )
+      }
     } catch {
       setPosts([])
       setError('Gagal memuat data post dari server.')
     } finally {
       setIsLoading(false)
     }
-  }, [limit, page, search])
+  }, [limit, page, search, filterCategory, filterStatus])
 
   useEffect(() => {
     void loadPosts()
@@ -262,7 +289,6 @@ const PostsPage = () => {
         setCategories([])
       }
     }
-
     void loadCategories()
   }, [])
 
@@ -277,14 +303,12 @@ const PostsPage = () => {
   const openCreateModal = () => {
     setForm(emptyForm)
     setFormError(null)
-    setSuccess(null)
     setIsModalOpen(true)
   }
 
   const openEditModal = (post: ApiPost) => {
     setForm(mapPostToForm(post))
     setFormError(null)
-    setSuccess(null)
     setIsModalOpen(true)
   }
 
@@ -319,25 +343,18 @@ const PostsPage = () => {
     event.preventDefault()
     setIsSaving(true)
     setFormError(null)
-    setSuccess(null)
 
     try {
       if (form.id) {
         await api.post(`/v1/posts/${form.id}`, buildPostFormData(form), {
-          headers: {
-            Accept: 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
+          headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         })
-        setSuccess('Post berhasil diperbarui.')
+        toast.success('Post berhasil diperbarui.')
       } else {
         await api.post('/v1/posts', buildPostFormData(form), {
-          headers: {
-            Accept: 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
+          headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         })
-        setSuccess('Post berhasil dibuat.')
+        toast.success('Post berhasil dibuat.')
       }
 
       setIsModalOpen(false)
@@ -350,22 +367,21 @@ const PostsPage = () => {
     }
   }
 
-  const handleDelete = async (post: ApiPost) => {
-    const confirmed = window.confirm(`Hapus post "${post.title}"?`)
-    if (!confirmed) return
+  const handleDelete = async () => {
+    if (!deleteTarget) return
 
-    setIsDeletingId(post.id)
+    setIsDeletingId(deleteTarget.id)
     setError(null)
-    setSuccess(null)
 
     try {
-      await api.delete(`/v1/posts/${post.id}`)
-      setSuccess('Post berhasil dihapus.')
+      await api.delete(`/v1/posts/${deleteTarget.id}`)
+      toast.success('Post berhasil dihapus.')
       setReloadKey((current) => current + 1)
     } catch (requestError) {
       setError(resolveErrorMessage(requestError))
     } finally {
       setIsDeletingId(null)
+      setDeleteTarget(null)
     }
   }
 
@@ -404,12 +420,6 @@ const PostsPage = () => {
             <p className="mt-2 text-4xl font-black text-slate-800">{draftCount}</p>
           </article>
         </div>
-
-        {success ? (
-          <div className="mt-6 rounded-[20px] bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-            {success}
-          </div>
-        ) : null}
 
         <div className="mt-8 rounded-[24px] border-2 border-white bg-white p-5 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.1)] sm:p-6">
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -453,21 +463,48 @@ const PostsPage = () => {
 
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-semibold text-slate-600">{isLoading ? 'Memuat data post...' : rangeText}</p>
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-              Tampilkan
+            <div className="flex flex-wrap items-center gap-3">
               <select
-                value={limit}
+                value={filterCategory}
                 onChange={(event) => {
                   setPage(1)
-                  setLimit(Number(event.target.value))
+                  setFilterCategory(event.target.value)
                 }}
                 className="rounded-[16px] border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-400"
               >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
+                <option value="">Semua Kategori</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
               </select>
-            </label>
+              <select
+                value={filterStatus}
+                onChange={(event) => {
+                  setPage(1)
+                  setFilterStatus(event.target.value)
+                }}
+                className="rounded-[16px] border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-400"
+              >
+                <option value="">Semua Status</option>
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+              </select>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+                Tampilkan
+                <select
+                  value={limit}
+                  onChange={(event) => {
+                    setPage(1)
+                    setLimit(Number(event.target.value))
+                  }}
+                  className="rounded-[16px] border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-400"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                </select>
+              </label>
+            </div>
           </div>
 
           {error ? <p className="mb-4 text-sm font-semibold text-rose-600">{error}</p> : null}
@@ -527,9 +564,7 @@ const PostsPage = () => {
                             </button>
                             <button
                               type="button"
-                              onClick={() => {
-                                void handleDelete(post)
-                              }}
+                              onClick={() => setDeleteTarget(post)}
                               disabled={isDeletingId === post.id}
                               className="rounded-[14px] bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-70"
                             >
@@ -694,11 +729,10 @@ const PostsPage = () => {
 
               <label className="block space-y-2 text-sm font-semibold text-slate-700">
                 <span>Content</span>
-                <textarea
+                <RichTextEditor
                   value={form.content}
-                  onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))}
-                  className="min-h-48 w-full resize-y rounded-[16px] border border-slate-200 bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-slate-400"
-                  required
+                  onChange={(html) => setForm((current) => ({ ...current, content: html }))}
+                  placeholder="Tulis konten artikel di sini..."
                   disabled={isSaving}
                 />
               </label>
@@ -726,6 +760,18 @@ const PostsPage = () => {
           </div>
         </div>
       ) : null}
+
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        title="Hapus Post"
+        message={`Apakah Anda yakin ingin menghapus post "${deleteTarget?.title}"? Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        isLoading={isDeletingId === deleteTarget?.id}
+        variant="danger"
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </AppShell>
   )
 }

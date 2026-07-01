@@ -3,6 +3,8 @@ import { isAxiosError } from 'axios'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { AppShell } from '../../layouts/AppShell'
+import { ConfirmModal } from '../../components/ConfirmModal'
+import { toast } from '../../lib/toast'
 import api from '../../lib/axios'
 
 const Icons = {
@@ -106,8 +108,8 @@ const CommentsPage = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [isDeletingId, setIsDeletingId] = useState<string | number | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [deleteTarget, setDeleteTarget] = useState<ApiComment | null>(null)
 
   const displayName = useMemo(() => {
     return formatDisplayName(user?.fullname ?? user?.name, user?.username, user?.email)
@@ -155,22 +157,21 @@ const CommentsPage = () => {
     return formatDate(sorted[0]?.created_at)
   }, [comments])
 
-  const handleDelete = async (comment: ApiComment) => {
-    const confirmed = window.confirm(`Hapus komentar dari "${comment.name}"?`)
-    if (!confirmed) return
+  const handleDelete = async () => {
+    if (!deleteTarget) return
 
-    setIsDeletingId(comment.id)
+    setIsDeletingId(deleteTarget.id)
     setError(null)
-    setSuccess(null)
 
     try {
-      await api.delete(`/v1/comments/${comment.id}`)
-      setSuccess('Komentar berhasil dihapus.')
+      await api.delete(`/v1/comments/${deleteTarget.id}`)
+      toast.success('Komentar berhasil dihapus.')
       setReloadKey((current) => current + 1)
     } catch (requestError) {
-      setError(resolveErrorMessage(requestError))
+      toast.error(resolveErrorMessage(requestError))
     } finally {
       setIsDeletingId(null)
+      setDeleteTarget(null)
     }
   }
 
@@ -203,12 +204,6 @@ const CommentsPage = () => {
             <p className="mt-2 text-2xl font-black text-slate-800">{latestCommentDate}</p>
           </article>
         </div>
-
-        {success ? (
-          <div className="mt-6 rounded-[20px] bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-            {success}
-          </div>
-        ) : null}
 
         {error ? (
           <div className="mt-6 rounded-[20px] bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
@@ -265,9 +260,7 @@ const CommentsPage = () => {
 
                       <button
                         type="button"
-                        onClick={() => {
-                          void handleDelete(comment)
-                        }}
+                        onClick={() => setDeleteTarget(comment)}
                         disabled={isDeletingId === comment.id}
                         className="inline-flex items-center justify-center rounded-[14px] bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700 transition-all hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-70"
                       >
@@ -297,6 +290,16 @@ const CommentsPage = () => {
           </Link>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        title="Hapus Komentar"
+        message={`Apakah Anda yakin ingin menghapus komentar dari "${deleteTarget?.name}"? Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Hapus"
+        isLoading={isDeletingId === deleteTarget?.id}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </AppShell>
   )
 }

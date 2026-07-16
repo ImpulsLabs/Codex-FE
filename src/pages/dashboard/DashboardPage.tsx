@@ -217,17 +217,17 @@ const DashboardPage = () => {
 
   return (
     <AppShell>
-      <div className="rounded-[40px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-8 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:p-10">
+      <div className="rounded-[28px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-4 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:rounded-[40px] sm:p-10">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Dashboard</p>
-            <h1 className="mt-2 text-3xl font-black text-slate-800">Welcome Back!, {displayName}</h1>
+            <h1 className="mt-2 text-2xl font-black text-slate-800 sm:text-3xl">Welcome Back!, {displayName}</h1>
             <p className="mt-1 text-sm text-slate-500">
               {isAdmin ? 'Ringkasan seluruh aktivitas konten dan pengguna.' : 'Ringkasan aktivitas konten milik Anda.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-4 rounded-[24px] border-2 border-white bg-white px-5 py-3 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.15)]">
+          <div className="flex w-full items-center gap-4 rounded-[24px] border-2 border-white bg-white px-5 py-3 shadow-[0px_10px_20px_-10px_rgba(15,23,42,0.15)] sm:w-auto">
             <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-slate-800 text-sm font-bold text-white">
               {profileInitials}
             </div>

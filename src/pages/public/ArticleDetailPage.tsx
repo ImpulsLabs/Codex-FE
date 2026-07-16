@@ -143,7 +143,7 @@ const ArticleDetailPage = () => {
   if (isLoading) {
     return (
       <AppShell>
-        <div className="rounded-[40px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-8 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:p-10">
+        <div className="rounded-[28px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-4 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:rounded-[40px] sm:p-10">
           <div className="h-6 w-32 animate-pulse rounded-[16px] bg-slate-200" />
           <div className="mt-6 h-12 max-w-3xl animate-pulse rounded-[20px] bg-slate-200" />
           <div className="mt-5 aspect-[16/9] animate-pulse rounded-[24px] bg-slate-200" />
@@ -160,7 +160,7 @@ const ArticleDetailPage = () => {
   if (error || !article) {
     return (
       <AppShell>
-        <div className="rounded-[40px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-8 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:p-10">
+        <div className="rounded-[28px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-4 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:rounded-[40px] sm:p-10">
           <Link to="/" className="text-sm font-bold text-slate-500 hover:text-slate-800">
             Kembali ke Articles
           </Link>
@@ -231,7 +231,7 @@ const ArticleDetailPage = () => {
 
   return (
     <AppShell>
-      <div className="rounded-[40px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-8 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:p-10">
+      <div className="rounded-[28px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-4 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:rounded-[40px] sm:p-10">
         <Link to="/" className="text-sm font-bold text-slate-500 hover:text-slate-800">
           Kembali ke Articles
         </Link>

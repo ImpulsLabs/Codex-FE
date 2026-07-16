@@ -70,8 +70,8 @@ export const LoginForm = () => {
   }
 
   return (
-    <div className="mx-auto my-5 max-w-[550px] rounded-[40px] border-[5px] border-white bg-linear-to-b from-white to-slate-50 px-[35px] py-[25px] shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)]">
-      <h1 className="text-center text-[30px] font-black text-slate-800">Login</h1>
+    <div className="mx-auto my-5 w-full max-w-[550px] rounded-[28px] border-[5px] border-white bg-linear-to-b from-white to-slate-50 px-5 py-6 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:rounded-[40px] sm:px-[35px] sm:py-[25px]">
+      <h1 className="text-center text-2xl font-black text-slate-800 sm:text-[30px]">Login</h1>
 
       <form className="mt-5" onSubmit={handleSubmit}>
         <input

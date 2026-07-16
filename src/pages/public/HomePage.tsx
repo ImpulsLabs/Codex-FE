@@ -148,7 +148,7 @@ const HomePage = () => {
 
   return (
     <AppShell>
-      <div className="rounded-[40px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-8 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:p-10">
+      <div className="rounded-[28px] border-[5px] border-white bg-gradient-to-b from-white to-slate-50 p-4 shadow-[0px_30px_30px_-20px_rgba(15,23,42,0.16)] sm:rounded-[40px] sm:p-10">
         <div className="grid gap-8 lg:grid-cols-[1fr_340px] lg:items-end">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Published Articles</p>
@@ -167,7 +167,7 @@ const HomePage = () => {
             <label htmlFor="article-search" className="sr-only">
               Cari artikel
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 id="article-search"
                 type="search"

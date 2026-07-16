@@ -1,29 +1,37 @@
 import { useEffect, useState } from 'react'
 import type { PropsWithChildren } from 'react'
+import {
+  FileText,
+  FolderOpen,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  Menu,
+  MessageSquareText,
+  Newspaper,
+  UserRound,
+  UserRoundPlus,
+  Users,
+  X,
+} from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { logout } from '../features/auth/api/logout'
 
 const MAIN_NAV_ITEMS = [
-  { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Articles', path: '/' },
-  { label: 'Posts', path: '/posts' },
-  { label: 'Categories', path: '/categories' },
-  { label: 'Comments', path: '/comments' },
-  { label: 'Users', path: '/users' },
-  { label: 'Profile', path: '/profile' },
+  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { label: 'Articles', path: '/', icon: Newspaper },
+  { label: 'Posts', path: '/posts', icon: FileText },
+  { label: 'Categories', path: '/categories', icon: FolderOpen },
+  { label: 'Comments', path: '/comments', icon: MessageSquareText },
+  { label: 'Users', path: '/users', icon: Users },
+  { label: 'Profile', path: '/profile', icon: UserRound },
 ]
 
 interface AppShellProps extends PropsWithChildren {
   contentClassName?: string
   contentMaxWidthClassName?: string
 }
-
-const LogoutIcon = () => (
-  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-  </svg>
-)
 
 export const AppShell = ({ children, contentClassName, contentMaxWidthClassName = 'max-w-5xl' }: AppShellProps) => {
   const location = useLocation()
@@ -61,7 +69,7 @@ export const AppShell = ({ children, contentClassName, contentMaxWidthClassName 
     try {
       await logout()
     } catch {
-      // Clear local session even if backend logout fails.
+      void 0
     } finally {
       clearAuth()
       setIsLoggingOut(false)
@@ -85,11 +93,7 @@ export const AppShell = ({ children, contentClassName, contentMaxWidthClassName 
               aria-label="Toggle navigation"
               aria-expanded={isMenuOpen}
             >
-              <span className="flex w-5 flex-col gap-1.5">
-                <span className="h-0.5 rounded-full bg-current" />
-                <span className="h-0.5 rounded-full bg-current" />
-                <span className="h-0.5 rounded-full bg-current" />
-              </span>
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
 
@@ -98,17 +102,20 @@ export const AppShell = ({ children, contentClassName, contentMaxWidthClassName 
               const isActive = item.path === '/'
                 ? location.pathname === '/' || location.pathname.startsWith('/articles/')
                 : location.pathname === item.path
+              const Icon = item.icon
+
               return (
                 <Link
                   key={item.label}
                   to={item.path}
-                  className={`shrink-0 rounded-[20px] px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                  className={`inline-flex shrink-0 items-center gap-2 rounded-[20px] px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
                     isActive
                       ? 'bg-slate-800 text-white shadow-lg shadow-slate-800/20'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                 >
-                  {item.label}
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
                 </Link>
               )
             })}
@@ -122,23 +129,25 @@ export const AppShell = ({ children, contentClassName, contentMaxWidthClassName 
                   void handleLogout()
                 }}
                 disabled={isLoggingOut}
-                className="mr-1 flex items-center gap-2 rounded-[20px] bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-70"
+                className="mr-1 inline-flex items-center gap-2 rounded-[20px] bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                <LogoutIcon />
+                <LogOut className="h-4 w-4" />
                 <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
               </button>
             ) : (
               <div className="mr-1 flex items-center gap-1">
                 <Link
                   to="/login"
-                  className="rounded-[20px] px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-slate-900"
+                  className="inline-flex items-center gap-2 rounded-[20px] px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-slate-900"
                 >
+                  <LogIn className="h-4 w-4" />
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="rounded-[20px] bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-800/20 transition-all duration-200 hover:bg-slate-700"
+                  className="inline-flex items-center gap-2 rounded-[20px] bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-800/20 transition-all duration-200 hover:bg-slate-700"
                 >
+                  <UserRoundPlus className="h-4 w-4" />
                   Register
                 </Link>
               </div>
@@ -151,17 +160,20 @@ export const AppShell = ({ children, contentClassName, contentMaxWidthClassName 
                 const isActive = item.path === '/'
                   ? location.pathname === '/' || location.pathname.startsWith('/articles/')
                   : location.pathname === item.path
+                const Icon = item.icon
+
                 return (
                   <Link
                     key={item.label}
                     to={item.path}
-                    className={`rounded-[18px] px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                    className={`inline-flex w-full items-center gap-3 rounded-[18px] px-4 py-3 text-sm font-semibold transition-all duration-200 ${
                       isActive
                         ? 'bg-slate-800 text-white shadow-lg shadow-slate-800/20'
                         : 'bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
-                    {item.label}
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{item.label}</span>
                   </Link>
                 )
               })}
@@ -173,23 +185,25 @@ export const AppShell = ({ children, contentClassName, contentMaxWidthClassName 
                     void handleLogout()
                   }}
                   disabled={isLoggingOut}
-                  className="mt-2 flex items-center justify-center gap-2 rounded-[18px] bg-slate-900 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[18px] bg-slate-900 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  <LogoutIcon />
+                  <LogOut className="h-4 w-4" />
                   <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
                 </button>
               ) : (
                 <div className="mt-2 grid gap-2">
                   <Link
                     to="/login"
-                    className="rounded-[18px] bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-slate-700 transition-all hover:bg-slate-100"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-[18px] bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-100"
                   >
+                    <LogIn className="h-4 w-4" />
                     Login
                   </Link>
                   <Link
                     to="/register"
-                    className="rounded-[18px] bg-slate-900 px-4 py-3 text-center text-sm font-bold text-white transition-all hover:bg-slate-800"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-[18px] bg-slate-900 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-slate-800"
                   >
+                    <UserRoundPlus className="h-4 w-4" />
                     Register
                   </Link>
                 </div>
